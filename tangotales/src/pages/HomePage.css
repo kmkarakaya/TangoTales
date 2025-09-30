@@ -1,20 +1,18 @@
 /* Tango-themed background with painting image */
 .tango-background {
+  /* Background image with dark overlay for text readability */
+  background-image: 
+    linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)),
+    url(../../public/images/tango-background.jpg);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  
   /* Fallback gradient if image is not available */
-  background: linear-gradient(135deg, #C41E3A 0%, #A11729 40%, #8B0000 100%);
+  background-color: #A11729;
+  
   position: relative;
-}
-
-/* Add a subtle overlay for depth and warmth */
-.tango-background::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(to bottom, rgba(196, 30, 58, 0.1) 0%, rgba(0, 0, 0, 0.2) 100%);
-  pointer-events: none;
 }
 
 /* Responsive adjustments for mobile */
