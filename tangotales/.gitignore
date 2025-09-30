@@ -21,3 +21,7 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Background images - users should add their own
+public/images/*.jpg
+public/images/*.png
