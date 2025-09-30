@@ -2,17 +2,43 @@
 
 > Discover the stories behind classic tango songs
 
-[![Firebase](https://img.shields.io/badge/Firebase-Free%20Tier-orange?style=flat-square&logo=firebase)](https://firebase.google.com/)
+[![Firebase](https://img.shields.io/badge/Fir📖 **Complete Firebase setup guide**: See [`FIREBASE_SETUP.md`](tangotales/FIREBASE_SETUP.md)
+
+## 🔄 CI/CD Pipeline
+
+TangoTales uses **GitHub Actions** for automated deployment with Firebase Hosting.
+
+### 🚀 **Automatic Deployments**
+- **Production**: Push to `main` branch → Auto-deploy to [https://tangotales-app.web.app](https://tangotales-app.web.app)
+- **Preview**: Pull Requests → Generate preview URLs for testing
+- **Build Process**: `npm ci && npm run build` in CI environment
+- **Status**: [![GitHub Actions](https://github.com/kmkarakaya/TangoTales/actions/workflows/firebase-hosting-merge.yml/badge.svg)](https://github.com/kmkarakaya/TangoTales/actions)
+
+### 📁 **Workflow Files**
+- `.github/workflows/firebase-hosting-merge.yml` - Production deployments
+- `.github/workflows/firebase-hosting-pull-request.yml` - PR preview deployments
+
+### 🔐 **Security**
+- Firebase service account authentication
+- GitHub secrets management for secure deployments
+- Automatic cleanup of preview deployments
+
+📖 **Complete CI/CD guide**: See [`GITHUB_ACTIONS_COMPLETE.md`](tangotales/GITHUB_ACTIONS_COMPLETE.md)
+
+## 🚀 Local Developmentse-Live-orange?style=flat-square&logo=firebase)](https://tangotales-app.web.app)
 [![React](https://img.shields.io/badge/React-18-blue?style=flat-square&logo=react)](https://reactjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-CSS-38B2AC?style=flat-square&logo=tailwind-css)](https://tailwindcss.com/)
+[![GitHub Actions](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?style=flat-square&logo=github-actions)](https://github.com/kmkarakaya/TangoTales/actions)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 
 A modern, responsive web application that helps users discover and explore the meanings, stories, and cultural context behind classic tango songs. TangoTales provides an intuitive interface for searching tango songs and accessing detailed explanations while building a community-driven knowledge base of musical stories.
 
 ## 🚀 Quick Start
 
-**Development Status**: Step 2 Complete - Firebase Firestore integration implemented and ready!
+**🎉 LIVE APP**: [https://tangotales-app.web.app](https://tangotales-app.web.app)
+
+**Development Status**: Step 2 Complete - Firebase integration + GitHub Actions CI/CD fully operational!
 
 ```bash
 # Clone and navigate to the React app
@@ -31,7 +57,7 @@ npm start
 # ✅ App will be available at http://localhost:3001
 ```
 
-> **Note**: Firebase Firestore integration is complete with comprehensive database operations. Next: search functionality and AI integration.
+> **🚀 LIVE**: Firebase Firestore integration + GitHub Actions CI/CD pipeline complete! Auto-deployment active. Next: search functionality and AI integration.
 
 ![TangoTales Demo](docs/images/demo.png)
 
@@ -412,7 +438,23 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 - Use Tailwind CSS for styling
 - Add proper error handling and loading states
 
-## 📝 License
+## � Project Links
+
+### 🌐 **Live Application**
+- **Production Site**: [https://tangotales-app.web.app](https://tangotales-app.web.app)
+- **Firebase Console**: [https://console.firebase.google.com/project/tangotales-app](https://console.firebase.google.com/project/tangotales-app)
+
+### 📊 **Development & CI/CD**
+- **GitHub Repository**: [https://github.com/kmkarakaya/TangoTales](https://github.com/kmkarakaya/TangoTales)
+- **GitHub Actions**: [https://github.com/kmkarakaya/TangoTales/actions](https://github.com/kmkarakaya/TangoTales/actions)
+- **Issues & Features**: [https://github.com/kmkarakaya/TangoTales/issues](https://github.com/kmkarakaya/TangoTales/issues)
+
+### 📚 **Documentation**
+- **Firebase Setup Guide**: [`FIREBASE_SETUP.md`](tangotales/FIREBASE_SETUP.md)
+- **GitHub Actions Guide**: [`GITHUB_ACTIONS_COMPLETE.md`](tangotales/GITHUB_ACTIONS_COMPLETE.md)
+- **Project Status**: [`.github/prompts/status.md`](.github/prompts/status.md)
+
+## �📝 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
