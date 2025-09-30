@@ -12,7 +12,7 @@ A modern, responsive web application that helps users discover and explore the m
 
 ## 🚀 Quick Start
 
-**Development Status**: Step 1 Complete - React app successfully set up and running!
+**Development Status**: Step 2 Complete - Firebase Firestore integration implemented and ready!
 
 ```bash
 # Clone and navigate to the React app
@@ -22,12 +22,16 @@ cd TangoTales/tangotales
 # Install dependencies
 npm install
 
+# Set up Firebase configuration
+cp .env.example .env.local
+# Edit .env.local with your Firebase project details (see FIREBASE_SETUP.md)
+
 # Start development server
 npm start
 # ✅ App will be available at http://localhost:3001
 ```
 
-> **Note**: The app currently shows the homepage and basic navigation. Database integration and AI features are coming in the next development phase.
+> **Note**: Firebase Firestore integration is complete with comprehensive database operations. Next: search functionality and AI integration.
 
 ![TangoTales Demo](docs/images/demo.png)
 
@@ -72,7 +76,45 @@ npm start
 - **Routing**: React Router v6
 - **State Management**: React Context API
 
-## 🚀 Quick Start
+## � Firebase Integration
+
+TangoTales uses Firebase Firestore for data storage and Firebase Hosting for deployment, **exclusively on the FREE tier**.
+
+### Database Schema
+
+```typescript
+// Songs Collection
+interface Song {
+  id: string;
+  title: string;
+  explanation: string;
+  sources: string[];
+  createdAt: Date;
+  searchCount: number;
+  averageRating: number;
+  totalRatings: number;
+  tags: string[];
+}
+
+// Ratings Collection  
+interface Rating {
+  id: string;
+  songId: string;
+  rating: number;
+  comment?: string;
+  timestamp: Date;
+}
+```
+
+### Available Operations
+
+- **Songs**: Create, read, search by title/letter, get popular/random selections
+- **Ratings**: Add ratings, calculate averages, retrieve by song
+- **Analytics**: Track search counts, maintain song statistics
+
+📖 **Complete Firebase setup guide**: See [`FIREBASE_SETUP.md`](tangotales/FIREBASE_SETUP.md)
+
+## �🚀 Quick Start
 
 ### Prerequisites
 
