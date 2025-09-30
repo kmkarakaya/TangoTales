@@ -1,0 +1,71 @@
+/* Tango-themed background with musical pattern */
+.tango-background {
+  background: 
+    /* Diagonal lines reminiscent of tango dance floor and musical staff */
+    repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 60px,
+      rgba(0, 0, 0, 0.08) 60px,
+      rgba(0, 0, 0, 0.08) 62px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 60px,
+      rgba(255, 215, 0, 0.06) 60px,
+      rgba(255, 215, 0, 0.06) 62px
+    ),
+    /* Musical staff lines - horizontal subtle lines */
+    repeating-linear-gradient(
+      180deg,
+      transparent,
+      transparent 100px,
+      rgba(0, 0, 0, 0.04) 100px,
+      rgba(0, 0, 0, 0.04) 101px,
+      transparent 101px,
+      transparent 120px,
+      rgba(0, 0, 0, 0.04) 120px,
+      rgba(0, 0, 0, 0.04) 121px
+    ),
+    /* Base gradient with deeper tango reds */
+    linear-gradient(135deg, #C41E3A 0%, #A11729 40%, #8B0000 100%);
+  position: relative;
+}
+
+/* Add a subtle overlay for depth and warmth */
+.tango-background::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(ellipse at top left, rgba(255, 215, 0, 0.08), transparent 50%),
+    radial-gradient(ellipse at bottom right, rgba(0, 0, 0, 0.15), transparent 50%);
+  pointer-events: none;
+}
+
+/* Add musical note decorations using pseudo-elements */
+.tango-background::after {
+  content: '♪ ♫ ♪ ♫ ♪ ♫';
+  position: absolute;
+  top: 5%;
+  right: 3%;
+  font-size: 3rem;
+  color: rgba(255, 215, 0, 0.12);
+  letter-spacing: 1.5rem;
+  pointer-events: none;
+  transform: rotate(-15deg);
+}
+
+/* Add more musical elements on mobile */
+@media (max-width: 768px) {
+  .tango-background::after {
+    font-size: 2rem;
+    letter-spacing: 1rem;
+    right: 2%;
+    top: 3%;
+  }
+}
