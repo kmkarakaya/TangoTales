@@ -1,6 +1,6 @@
-import { GoogleGenAI, Content } from '@google/genai';
+import { GoogleGenAI } from '@google/genai';
 import { config } from '../utils/config';
-import { Song, SongMetadata, Recording, Performer } from '../types/song';
+import { SongMetadata, Recording, Performer } from '../types/song';
 
 // Initialize Gemini AI client
 const ai = new GoogleGenAI({ apiKey: config.gemini.apiKey });
