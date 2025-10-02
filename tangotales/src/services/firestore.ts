@@ -89,10 +89,16 @@ export const searchSongsByTitle = async (searchQuery: string): Promise<Song[]> =
     const querySnapshot = await getDocs(q);
     const allSongs = querySnapshot.docs.map(doc => convertSongData(doc.id, doc.data()));
     
-    // Filter songs by case-insensitive title match
-    const filteredSongs = allSongs.filter(song => 
-      song.title.toLowerCase().includes(normalizedQuery)
-    );
+    // Filter songs by case-insensitive title match (with Unicode normalization for accented characters)
+    const filteredSongs = allSongs.filter(song => {
+      const titleLower = song.title.toLowerCase();
+      const titleNormalized = song.title.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      const queryNormalized = normalizedQuery.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      
+      // Check both original and normalized versions
+      return titleLower.includes(normalizedQuery) || 
+             titleNormalized.includes(queryNormalized);
+    });
     
     return filteredSongs.slice(0, 10); // Limit to 10 results
   } catch (error) {
