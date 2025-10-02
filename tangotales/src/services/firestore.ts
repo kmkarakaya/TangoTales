@@ -77,18 +77,23 @@ export const searchSongsByTitle = async (searchQuery: string): Promise<Song[]> =
       return [];
     }
 
-    // Firestore text search using range queries for partial matches
+    // Since Firestore doesn't support case-insensitive queries natively,
+    // we fetch all songs and filter client-side
+    // This is acceptable for small datasets (free tier constraint)
     const q = query(
       collection(db, 'songs'),
-      where('title', '>=', normalizedQuery),
-      where('title', '<=', normalizedQuery + '\uf8ff'),
-      orderBy('title'),
-      orderBy('searchCount', 'desc'),
-      limit(10)
+      orderBy('searchCount', 'desc')
     );
 
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => convertSongData(doc.id, doc.data()));
+    const allSongs = querySnapshot.docs.map(doc => convertSongData(doc.id, doc.data()));
+    
+    // Filter songs by case-insensitive title match
+    const filteredSongs = allSongs.filter(song => 
+      song.title.toLowerCase().includes(normalizedQuery)
+    );
+    
+    return filteredSongs.slice(0, 10); // Limit to 10 results
   } catch (error) {
     console.error('Error searching songs by title:', error);
     throw new Error('Failed to search songs');

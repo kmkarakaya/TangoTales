@@ -1,15 +1,19 @@
 # 🎵 TangoTales - Phase 1: Core Functionality Implementation Plan
 
-## 📋 Phase 1 Overview (Week 1-2)
+## 📋 Phase 1 Overview
 
 **Goal**: Build the foundational architecture and core search functionality for TangoTales
 
+**Status**: ✅ **COMPLETE** - All core functionality implemented with desktop-first UI
+
 **Key Deliverables**:
-- [ ] Set up React project with TypeScript
-- [ ] Implement Firebase Firestore integration
-- [ ] Create basic search functionality
-- [ ] Build song explanation display component
-- [ ] Integrate Gemini AI API for new song research
+- [x] Set up React project with TypeScript
+- [x] Implement Firebase Firestore integration
+- [x] Create basic search functionality with debouncing
+- [x] Build song explanation display component
+- [x] Desktop-first 3-column grid layout
+- [x] 100% Tailwind CSS implementation
+- [ ] Integrate Gemini AI API for new song research (PLANNED)
 
 ---
 
@@ -66,89 +70,41 @@
 
 ---
 
-### **Step 2: Firebase Firestore Integration**
+### **Step 2: Firebase Firestore Integration** ✅ COMPLETE
 
-#### 2.1 Firebase Project Setup (Using Firebase CLI)
-- [ ] Install Firebase CLI: `npm install -g firebase-tools`
-- [ ] Login to Firebase: `firebase login`
-- [ ] Initialize Firebase project: `firebase init`
-  - Select Firestore Database (FREE tier)
-  - Select Hosting (FREE tier)
-  - Configure for single-page application
-- [ ] Configure `firebase.json` for hosting settings
-- [ ] Set up Firestore security rules in `firestore.rules` for public read/write:
-  ```javascript
-  rules_version = '2';
-  service cloud.firestore {
-    match /databases/{database}/documents {
-      // Songs collection - public read, controlled write
-      match /songs/{songId} {
-        allow read: if true;
-        allow write: if true; // FREE tier - simplified rules
-      }
-      // Ratings collection - public read/write
-      match /ratings/{ratingId} {
-        allow read, write: if true;
-      }
-    }
-  }
-  ```
-- [ ] Deploy rules: `firebase deploy --only firestore:rules`
+#### 2.1 Firebase Project Setup (Using Firebase CLI) ✅
+- [x] Install Firebase CLI: `npm install -g firebase-tools`
+- [x] Login to Firebase: `firebase login`
+- [x] Initialize Firebase project: `firebase init`
+  - Selected Firestore Database (FREE tier)
+  - Selected Hosting (FREE tier)
+  - Configured for single-page application
+- [x] Configure `firebase.json` for hosting settings
+- [x] Set up Firestore security rules in `firestore.rules` for public read/write
+- [x] Deploy rules: `firebase deploy --only firestore:rules`
 
-#### 2.2 Firebase Service Implementation (FREE Tier Only)
-- [ ] Create `src/services/firebase.ts`:
-  ```typescript
-  import { initializeApp } from 'firebase/app';
-  import { getFirestore } from 'firebase/firestore';
+#### 2.2 Firebase Service Implementation (FREE Tier Only) ✅
+- [x] Create `src/services/firebase.ts`:
+  - Initialize Firebase app with environment variables
+  - Export Firestore database instance
+  - Use Firebase v9+ modular SDK
   
-  const firebaseConfig = {
-    apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
-    authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
-    projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
-    storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
-    appId: process.env.REACT_APP_FIREBASE_APP_ID
-  };
-  
-  const app = initializeApp(firebaseConfig);
-  export const db = getFirestore(app);
-  ```
-- [ ] Create `src/services/firestore.ts` (Client SDK operations only):
-  ```typescript
-  import { 
-    doc, getDoc, setDoc, updateDoc, increment,
-    collection, query, where, orderBy, limit, getDocs, addDoc 
-  } from 'firebase/firestore';
-  import { db } from './firebase';
-  
-  // FREE tier compliant functions:
-  export const getSongById = async (songId: string) => {
-    const songDoc = await getDoc(doc(db, 'songs', songId));
-    return songDoc.exists() ? songDoc.data() : null;
-  };
-  
-  export const searchSongsByTitle = async (searchQuery: string) => {
-    const q = query(
-      collection(db, 'songs'),
-      where('title', '>=', searchQuery),
-      where('title', '<=', searchQuery + '\uf8ff'),
-      orderBy('searchCount', 'desc'),
-      limit(10)
-    );
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  };
-  ```
+- [x] Create `src/services/firestore.ts` (Client SDK operations only):
+  - `searchSongsByTitle(query: string)` - Search songs by title with Firestore queries
+  - `getPopularSongs(limit: number)` - Get most-searched songs ordered by searchCount
+  - `getSongsByLetter(letter: string)` - Filter songs by first letter
+  - `getSongById(songId: string)` - Retrieve single song document
+  - All functions use client-side Firestore operations (no Admin SDK)
 
-#### 2.3 TypeScript Interfaces
-- [ ] Create `src/types/song.ts`:
+#### 2.3 TypeScript Interfaces ✅
+- [x] Create `src/types/song.ts`:
   ```typescript
   interface Song {
     id: string;
     title: string;
     explanation: string;
     sources: string[];
-    createdAt: Date;
+    createdAt: Timestamp;
     searchCount: number;
     averageRating: number;
     totalRatings: number;
@@ -160,80 +116,116 @@
     songId: string;
     rating: number;
     comment?: string;
-    timestamp: Date;
+    timestamp: Timestamp;
   }
   ```
 
 ---
 
-### **Step 3: Basic Search Functionality**
+### **Step 3: Basic Search Functionality** ✅ COMPLETE
 
-#### 3.1 Search Context Setup
-- [ ] Create `src/contexts/SearchContext.tsx`:
+#### 3.1 Search Context Setup ✅
+- [x] Create `src/contexts/SearchContext.tsx`:
   - Search query state
-  - Search results state
-  - Loading states
-  - Error handling state
-  - Search history (browser-based)
+  - Search results state (Song[])
+  - Loading states (boolean)
+  - Error handling state (string | null)
+  - hasSearched flag for UI states
+  - clearSearch() function for resetting state
 
-#### 3.2 Search Hook Implementation
-- [ ] Create `src/hooks/useSearch.ts`:
-  - `searchSongs(query: string)` function
-  - Debounced search functionality
-  - Search result caching
+#### 3.2 Search Hook Implementation ✅
+- [x] Create `src/hooks/useSearch.ts`:
+  - `performSearch(query: string)` function with debouncing (300ms)
+  - `loadPopularSongs()` function to fetch top songs
+  - `loadSongsByLetter(letter: string)` function for A-Z navigation
+  - Search result caching using useRef Map
   - Error handling and retry logic
+  - Integration with SearchContext for centralized state
 
-#### 3.3 Search Components
-- [ ] Create `src/components/search/SearchBar.tsx`:
-  - Input field with proper styling
-  - Search icon and clear button
-  - Loading spinner integration
+#### 3.3 Search Components ✅
+- [x] Create `src/components/search/SearchBar.tsx`:
+  - Input field with Tailwind styling (`bg-white/10 rounded-lg shadow-md`)
+  - Search icon (🎵) and search button (🔍)
+  - Loading spinner integration during search
   - Keyboard navigation (Enter to search)
+  - Focus states with ring effects (`ring-2 ring-yellow-400/50`)
+  - Debounced onChange handler (300ms delay)
+  - Clear button functionality
   
-- [ ] Create `src/components/search/SearchResults.tsx`:
-  - Display list of found songs
-  - "No results" state
-  - Loading skeleton components
-  - Click handlers for song selection
+- [x] Create `src/components/search/SearchResults.tsx`:
+  - Display list of found songs using SongCard components
+  - "No results" state with helpful message
+  - Loading state with LoadingSpinner component
+  - Error message display with ErrorMessage component
+  - "Show Popular Songs" button for discovering content
+  - White card containers (`bg-white rounded-lg shadow-md`)
 
-#### 3.4 Search Logic Implementation
-- [ ] Implement search algorithm:
-  - Check Firestore first for existing songs
-  - Fuzzy search functionality for partial matches
-  - Search by title (case-insensitive)
-  - Return results ordered by search count and relevance
+#### 3.4 Search Logic Implementation ✅
+- [x] Implement search algorithm:
+  - Check Firestore first for existing songs using `searchSongsByTitle()`
+  - Client-side caching to avoid redundant Firestore queries
+  - Search by title with Firestore range queries
+  - Return results ordered by searchCount (descending)
+  - Handle empty queries gracefully
+  - Error boundaries for API failures
+
+#### 3.5 Additional Discovery Features ✅
+- [x] Create `src/components/navigation/AlphabetNav.tsx`:
+  - A-Z button grid for filtering songs by first letter
+  - Gray backgrounds with red hover states
+  - Responsive flex-wrap layout
+  - Integration with `getSongsByLetter()` service
+  
+- [x] Popular Songs Sidebar:
+  - Toggle button to load popular songs
+  - Display in right sidebar (3-column grid layout)
+  - "Show Popular Songs" button with click handler
+  - Integration with `getPopularSongs()` service
 
 ---
 
-### **Step 4: Song Explanation Display Component**
+### **Step 4: Song Explanation Display Component** ✅ PARTIALLY COMPLETE
 
-#### 4.1 Song Display Components
-- [ ] Create `src/components/songs/SongCard.tsx`:
-  - Song title display
-  - Explanation content area
-  - Search count indicator
-  - Rating display (stars)
-  - Sources list display
-  - Tags display
+#### 4.1 Song Display Components ✅
+- [x] Create `src/components/songs/SongCard.tsx`:
+  - Song title display with truncation
+  - Clean white card background (`bg-white/10 rounded-lg border`)
+  - Search count indicator (🔍 icon + count)
+  - Rating display with star emojis (⭐)
+  - Rank badge for popular songs (#1, #2, etc.)
+  - Musical note icon (🎵)
+  - Hover effects (`hover:bg-white/20 hover:shadow-lg hover:-translate-y-1`)
+  - Click handler for song selection
 
 - [ ] Create `src/components/songs/SongDetail.tsx`:
-  - Full song information layout
+  - Full song information layout (NOT YET IMPLEMENTED)
   - Formatted explanation text
   - Metadata section (created date, search count)
   - Sources as clickable links
   - Rating section placeholder
 
-#### 4.2 Content Formatting
+#### 4.2 Content Formatting ⚠️ BASIC IMPLEMENTATION
 - [ ] Create `src/utils/textFormatter.ts`:
-  - Format explanation text with proper paragraphs
-  - Sanitize HTML content
-  - Truncate long explanations with "Read more"
-  - Format timestamps and dates
+  - Basic text display (no special formatting yet)
+  - Truncation handled in components
+  - Date formatting (NOT YET IMPLEMENTED)
 
-#### 4.3 Loading and Error States
-- [ ] Create `src/components/common/LoadingSpinner.tsx`
-- [ ] Create `src/components/common/ErrorMessage.tsx`
-- [ ] Create `src/components/common/EmptyState.tsx`
+#### 4.3 Loading and Error States ✅
+- [x] Create `src/components/common/LoadingSpinner.tsx`:
+  - Spinner animation with size variants (sm, md, lg)
+  - Optional loading message
+  - Tailwind-only styling (no custom CSS)
+  
+- [x] Create `src/components/common/ErrorMessage.tsx`:
+  - Error display with red styling
+  - Icon support
+  - Clean white card presentation
+  
+- [x] Create `src/components/common/ErrorBoundary.tsx`:
+  - React Error Boundary for catching component errors
+  - Fallback UI with tango emoji (🎭)
+  - "Try Again" button to reload page
+  - Tailwind styling (`bg-white rounded-lg shadow-md`)
 
 ---
 
@@ -297,62 +289,109 @@
 
 ---
 
-### **Step 6: Basic Layout and Navigation**
+### **Step 6: Basic Layout and Navigation** ✅ COMPLETE
 
-#### 6.1 Main Layout Components
-- [ ] Create `src/components/layout/Header.tsx`:
-  - TangoTales logo
-  - Search bar integration
-  - Simple navigation menu
+#### 6.1 Main Layout Components ✅
+- [x] Create `src/pages/HomePage.tsx`:
+  - Desktop-first 3-column grid layout (`lg:grid-cols-12`)
+  - Left sidebar: Browse by Letter (2 columns)
+  - Center content: Search + Results (7 columns)
+  - Right sidebar: Popular Songs (3 columns)
+  - Feature cards section (3-column grid on desktop)
+  - White header with shadow (`bg-white shadow-md`)
+  - Gradient background (`bg-gradient-to-br from-tango-red`)
+  - Footer with copyright
 
-- [ ] Create `src/components/layout/Footer.tsx`:
-  - About link
-  - GitHub repository link
-  - Copyright information
+- [x] Header section (inline in HomePage):
+  - 🎵 TangoTales logo
+  - Tagline: "Discover the stories behind classic tango songs"
+  - Clean white background with shadow
+  - Responsive padding
 
-- [ ] Create `src/components/layout/MainLayout.tsx`:
-  - Header and footer wrapper
-  - Main content area
-  - Responsive grid system
+- [x] Footer section (inline in HomePage):
+  - Copyright notice
+  - Simple centered text
+  - Gradient background continuation
 
-#### 6.2 Basic Routing Setup
-- [ ] Create `src/pages/HomePage.tsx`:
-  - Welcome message
-  - Featured search bar
-  - Basic instructions
+#### 6.2 Basic Routing Setup ✅
+- [x] Create `src/pages/HomePage.tsx`:
+  - Main landing page with 3-column layout
+  - Search functionality integration
+  - AlphabetNav and Popular Songs sections
 
-- [ ] Create `src/pages/SearchPage.tsx`:
-  - Search results display
-  - Song detail view integration
+- [x] Create `src/pages/SearchPage.tsx`:
+  - Dedicated search results page
+  - Full-width search results display
 
-- [ ] Set up React Router in `src/App.tsx`:
-  - Route definitions
-  - 404 page handling
+- [x] Create `src/pages/NotFoundPage.tsx`:
+  - 404 error page
+  - Clean error message
+
+- [x] Set up React Router in `src/App.tsx`:
+  - Route definitions for /, /search, /404
+  - SearchProvider wrapper for state management
+  - ErrorBoundary wrapper for error handling
   - Navigation between pages
+
+#### 6.3 Navigation Components ✅
+- [x] Create `src/components/navigation/AlphabetNav.tsx`:
+  - A-Z button grid for letter filtering
+  - Gray buttons (`bg-gray-100`) with red hover (`hover:bg-tango-red`)
+  - Responsive flex-wrap layout
+  - White card container
+
+- [x] Create `src/components/navigation/MobileNav.tsx`:
+  - Mobile menu toggle button
+  - Hamburger icon animation
+  - Slide-out menu overlay
+  - Popular songs in mobile view
+  - Navigation links (About, Contact, GitHub)
 
 ---
 
-### **Step 7: Basic Styling and Theming**
+### **Step 7: Basic Styling and Theming** ✅ COMPLETE
 
-#### 7.1 Design System Setup
-- [ ] Create `src/styles/theme.ts`:
-  - Define color palette (tango red #C41E3A, gold #FFD700)
-  - Typography scale
-  - Spacing system
-  - Component variants
+#### 7.1 Design System Setup ✅
+- [x] Configure `tailwind.config.js`:
+  - Define tango color palette:
+    - `tango-red`: #C41E3A (primary)
+    - `tango-gold`: #FFD700 (accent)
+    - `tango-dark-red`: #A11729 (darker variant)
+    - `tango-light-red`: #E85D75 (lighter variant)
+  - Content paths for purging unused styles
+  - No custom plugins needed
 
-#### 7.2 Component Styling
-- [ ] Style all created components with Tailwind CSS:
-  - Responsive design principles
-  - Consistent spacing and typography
-  - Hover states and transitions
-  - Loading state animations
+- [x] Create `src/styles/theme.ts`:
+  - Color constants exported for programmatic use
+  - Consistent color references across components
 
-#### 7.3 Basic Responsiveness
-- [ ] Implement mobile-first responsive design:
-  - Mobile layout (320px+)
-  - Tablet layout (768px+)
-  - Desktop layout (1024px+)
+#### 7.2 Component Styling ✅
+- [x] Style all components with 100% Tailwind CSS:
+  - **No custom CSS files** (removed HomePage.css, cleaned App.css)
+  - **White cards**: `bg-white rounded-lg shadow-md border border-gray-200`
+  - **Gradient background**: `bg-gradient-to-br from-tango-red via-red-800 to-red-900`
+  - **Responsive spacing**: `p-4 md:p-6 lg:p-8` patterns
+  - **Typography**: `font-semibold`, `text-lg`, `text-gray-700` for hierarchy
+  - **Hover states**: `hover:bg-white/20`, `hover:-translate-y-1`, `hover:shadow-lg`
+  - **Loading states**: Spinner animations with Tailwind utilities
+  - **Focus states**: `focus:ring-2 focus:ring-tango-red` for accessibility
+
+#### 7.3 Responsive Design Implementation ✅
+- [x] Desktop-first responsive design (changed from mobile-first):
+  - **Desktop (lg: 1024px+)**: 3-column grid (`lg:grid-cols-12`)
+  - **Tablet (md: 768px+)**: 2-column layouts
+  - **Mobile (default)**: Stacked single-column layout
+  - **Grid system**: 12-column grid with custom spans (2-7-3 split)
+  - **Breakpoint usage**: `lg:block hidden` for sidebar visibility
+  - **Flexible layouts**: `flex-wrap` for button grids
+
+#### 7.4 Performance Optimizations ✅
+- [x] Tailwind CSS v3.4.17 (downgraded from v4 for stability)
+- [x] PostCSS configuration with autoprefixer
+- [x] React Scripts build tooling (removed CRACO)
+- [x] No backdrop-filter (removed for performance)
+- [x] No custom CSS files (zero technical debt)
+- [x] Purge unused styles in production build
 
 ---
 

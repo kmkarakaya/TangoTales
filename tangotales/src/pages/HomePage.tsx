@@ -1,16 +1,63 @@
 import React from 'react';
 import { SearchBar, SearchResults } from '../components/search';
 import { AlphabetNav } from '../components/navigation';
-import { useSearch } from '../hooks/useSearch';
+import { useSearchContext } from '../contexts/SearchContext';
+import { getSongsByLetter, getPopularSongs } from '../services/firestore';
+import { Song } from '../types/song';
 
 const HomePage: React.FC = () => {
-  const { loadSongsByLetter, loadPopularSongs } = useSearch();
+  const { setQuery, setResults, setLoading, setError, setHasSearched } = useSearchContext();
 
   React.useEffect(() => {
     // Load popular songs on initial mount
-    loadPopularSongs(12);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    const loadInitialSongs = async () => {
+      try {
+        const songs = await getPopularSongs(12);
+        setResults(songs);
+        setHasSearched(true);
+      } catch (error) {
+        console.error('Failed to load popular songs:', error);
+      }
+    };
+    loadInitialSongs();
+  }, [setResults, setHasSearched]);
+
+  const handleSearchPerformed = React.useCallback((query: string, results: Song[], error: string | null) => {
+    setQuery(query);
+    setResults(results);
+    setError(error);
+    setHasSearched(true);
+  }, [setQuery, setResults, setError, setHasSearched]);
+
+  const handleLetterClick = React.useCallback(async (letter: string) => {
+    try {
+      setLoading(true);
+      const songs = await getSongsByLetter(letter);
+      setResults(songs);
+      setQuery(`Songs starting with "${letter}"`);
+      setHasSearched(true);
+    } catch (error) {
+      console.error('Failed to load songs by letter:', error);
+      setError(error instanceof Error ? error.message : 'Failed to load songs');
+    } finally {
+      setLoading(false);
+    }
+  }, [setLoading, setResults, setQuery, setHasSearched, setError]);
+
+  const handleLoadPopularSongs = React.useCallback(async () => {
+    try {
+      setLoading(true);
+      const songs = await getPopularSongs(20);
+      setResults(songs);
+      setQuery('');
+      setHasSearched(true);
+    } catch (error) {
+      console.error('Failed to load popular songs:', error);
+      setError(error instanceof Error ? error.message : 'Failed to load songs');
+    } finally {
+      setLoading(false);
+    }
+  }, [setLoading, setResults, setQuery, setHasSearched, setError]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-yellow-50">
@@ -39,7 +86,7 @@ const HomePage: React.FC = () => {
               <h3 className="text-sm font-semibold text-gray-700 mb-3">
                 Browse by Letter
               </h3>
-              <AlphabetNav onLetterClick={loadSongsByLetter} />
+              <AlphabetNav onLetterClick={handleLetterClick} />
             </div>
           </aside>
 
@@ -47,7 +94,10 @@ const HomePage: React.FC = () => {
           <section className="lg:col-span-7">
             {/* Search Bar */}
             <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-              <SearchBar placeholder="Search for a tango song..." />
+              <SearchBar 
+                placeholder="Search for a tango song..." 
+                onSearchPerformed={handleSearchPerformed}
+              />
             </div>
 
             {/* Results */}
@@ -62,7 +112,7 @@ const HomePage: React.FC = () => {
               </h3>
               
               <button
-                onClick={() => loadPopularSongs(20)}
+                onClick={handleLoadPopularSongs}
                 className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors"
               >
                 Show Popular Songs

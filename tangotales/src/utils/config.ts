@@ -30,7 +30,7 @@ export const validateConfig = (): string[] => {
   }
   
   if (!config.gemini.apiKey) {
-    errors.push('REACT_APP_GEMINI_API_KEY is required');
+    errors.push('GEMINI_API_KEY or REACT_APP_GEMINI_API_KEY is required');
   }
   
   return errors;
