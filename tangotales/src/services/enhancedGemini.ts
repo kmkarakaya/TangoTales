@@ -141,11 +141,67 @@ class SongInformationService {
     const songData: Partial<EnhancedSongResult> = {};
     let successfulTurns = 0;
     let failedTurns = 0;
+    let correctedTitle = songTitle;
+    
+    // Turn 0: Title Correction & Validation
+    try {
+      console.log('📤 Turn 0: Title correction and validation');
+      const titleCorrectionPrompt = `Given the user input "${songTitle}", identify the correct tango song title. Respond ONLY with this JSON:
+{
+  "correctedTitle": "exact correct title of the tango song or null if not a known tango",
+  "confidence": "high" | "medium" | "low" | "not_found",
+  "alternativeSpellings": ["possible alternative spelling 1", "alternative 2"] or null,
+  "isKnownTango": true | false
+}
+
+IMPORTANT: 
+- If this appears to be a misspelling of a famous tango, correct it (e.g., "merseditas" → "Merceditas")
+- Only return known, documented tango songs from Argentine tango repertoire
+- Set isKnownTango to false if this doesn't match any real tango song
+- Be strict: better to return null than fabricate titles`;
+      
+      const titleResponse = await chat.sendMessage({ message: titleCorrectionPrompt });
+      console.log('📥 Turn 0 response:', titleResponse.text?.length || 0, 'chars');
+      
+      const titleData = this.parseJSONWithRepair(titleResponse.text) as any;
+      
+      // Update the title if correction was found
+      if (titleData.correctedTitle && titleData.isKnownTango) {
+        correctedTitle = titleData.correctedTitle;
+        console.log(`🔧 Title corrected: "${songTitle}" → "${correctedTitle}"`);
+      } else if (!titleData.isKnownTango) {
+        console.log(`⚠️ Warning: "${songTitle}" is not recognized as a known tango song`);
+        // We'll proceed but mark this in metadata
+      }
+      
+      // Add title correction info to song data
+      Object.assign(songData, {
+        originalUserInput: songTitle,
+        correctedTitle: correctedTitle,
+        titleCorrectionConfidence: titleData.confidence || 'unknown'
+      });
+      
+      successfulTurns++;
+      console.log('✅ Turn 0 successful:', { originalTitle: songTitle, correctedTitle, confidence: titleData.confidence || 'unknown' });
+    } catch (error) {
+      console.error('❌ Turn 0 failed:', error);
+      failedTurns++;
+      // Use original title if correction fails
+      correctedTitle = songTitle;
+      Object.assign(songData, {
+        originalUserInput: songTitle,
+        correctedTitle: songTitle,
+        titleCorrectionConfidence: 'failed'
+      });
+    }
+    
+    // Now use the corrected title for all subsequent turns
+    console.log(`🎯 Using title "${correctedTitle}" for information gathering`);
     
     // Turn 1: Basic Song Information
     try {
       console.log('📤 Turn 1: Basic song information');
-      const basicPrompt = `For the tango song "${songTitle}", provide ONLY this JSON structure:
+      const basicPrompt = `For the tango song "${correctedTitle}", provide ONLY this JSON structure:
 {
   "composer": "composer full name or Unknown",
   "lyricist": "lyricist name or null", 
@@ -177,7 +233,7 @@ Periods: Pre-Golden Age (1880-1916), Golden Age (1916-1955), Post-Golden Age (19
     // Turn 2: Cultural & Thematic Information
     try {
       console.log('� Turn 2: Cultural and thematic information');
-      const culturalPrompt = `For "${songTitle}", provide ONLY this JSON:
+      const culturalPrompt = `For "${correctedTitle}", provide ONLY this JSON:
 {
   "themes": ["theme1", "theme2", "theme3"],
   "culturalSignificance": "brief description of cultural importance or null",
@@ -207,7 +263,7 @@ Keep descriptions concise (1-2 sentences each).`;
     // Turn 3: Musical & Dance Characteristics
     try {
       console.log('📤 Turn 3: Musical and dance characteristics');
-      const musicPrompt = `For "${songTitle}", provide ONLY this JSON:
+      const musicPrompt = `For "${correctedTitle}", provide ONLY this JSON:
 {
   "musicalCharacteristics": ["characteristic1", "characteristic2"],
   "danceStyle": ["dance_characteristic1", "dance_characteristic2"],
@@ -237,7 +293,7 @@ Keep descriptions concise (1-2 sentences each).`;
     // Turn 4: Notable Recordings & Performers
     try {
       console.log('📤 Turn 4: Notable recordings and performers');
-      const performersPrompt = `For "${songTitle}", provide ONLY this JSON:
+      const performersPrompt = `For "${correctedTitle}", provide ONLY this JSON:
 {
   "notableRecordings": [
     {
@@ -278,7 +334,7 @@ Use empty arrays [] if no notable recordings/performers are known.`;
     // Turn 5: Story & Comprehensive Summary
     try {
       console.log('📤 Turn 5: Story and comprehensive summary');
-      const summaryPrompt = `For "${songTitle}", provide ONLY this JSON:
+      const summaryPrompt = `For "${correctedTitle}", provide ONLY this JSON:
 {
   "story": "narrative told by the lyrics or null",
   "inspiration": "background story of song creation or null",
@@ -301,7 +357,7 @@ The explanation should be informative and engaging, suitable for tango enthusias
       Object.assign(songData, {
         story: null,
         inspiration: null,
-        explanation: `"${songTitle}" is a tango song that forms part of the rich Argentine musical tradition. While specific details about its creation and history may be limited, it represents the enduring legacy of tango music that continues to captivate dancers and music lovers worldwide.`
+        explanation: `"${correctedTitle}" is a tango song that forms part of the rich Argentine musical tradition. While specific details about its creation and history may be limited, it represents the enduring legacy of tango music that continues to captivate dancers and music lovers worldwide.`
       });
     }
     
@@ -321,7 +377,14 @@ The explanation should be informative and engaging, suitable for tango enthusias
     
     console.log(`📈 Final quality assessment: ${metadata.aiResponseQuality} (${Math.round(successRate * 100)}% success rate)`);
     
-    return { ...this.sanitizeResponse(songData), metadata };
+    // Ensure the corrected title is in the final result
+    const finalResult = { ...this.sanitizeResponse(songData), metadata } as any;
+    if (correctedTitle !== songTitle) {
+      finalResult.title = correctedTitle;
+      console.log(`🏷️ Final title corrected: "${songTitle}" → "${correctedTitle}"`);
+    }
+    
+    return finalResult;
   }
   
   private parseAndValidateResponse(responseText: string): Partial<EnhancedSongResult> {
