@@ -1,68 +1,66 @@
-/* Tango-themed background with painting image */
+/* Simple Desktop-First Layout */
 .tango-background {
-  /* Background properties (image set via inline style for public folder support) */
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
   background-attachment: fixed;
-  
-  /* Fallback solid background if image is not available */
   background-color: #A11729;
-  
-  position: relative;
+  min-height: 100vh;
 }
 
-/* Content container with very light background - shows background image clearly */
+/* Content overlays */
 .content-overlay {
-  background: rgba(0, 0, 0, 0.1);
-  backdrop-filter: blur(3px);
+  background: rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(5px);
   border-radius: 1rem;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* Card backgrounds with minimal opacity - background image dominates */
+/* Feature cards */
 .feature-card {
-  background: rgba(0, 0, 0, 0.05);
-  backdrop-filter: blur(4px);
-  border-radius: 1rem;
-  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.2);
-}
-
-.search-container {
   background: rgba(0, 0, 0, 0.1);
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(6px);
   border-radius: 1rem;
-  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.3s ease;
 }
 
-/* Very strong text shadows for readability with minimal container backgrounds */
+.feature-card:hover {
+  background: rgba(0, 0, 0, 0.2);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+  transform: translateY(-4px);
+}
+
+/* Search container */
+.search-container {
+  background: rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(8px);
+  border-radius: 1rem;
+  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Text shadows for readability */
 .text-shadow-strong {
   text-shadow: 
     4px 4px 8px rgba(0, 0, 0, 1),
     2px 2px 4px rgba(0, 0, 0, 0.95),
-    1px 1px 2px rgba(0, 0, 0, 0.9),
-    0px 0px 12px rgba(0, 0, 0, 0.8),
-    0px 0px 24px rgba(0, 0, 0, 0.6),
-    0px 0px 36px rgba(0, 0, 0, 0.4);
+    0px 0px 12px rgba(0, 0, 0, 0.8);
 }
 
 .text-shadow-medium {
   text-shadow: 
     3px 3px 6px rgba(0, 0, 0, 1),
     2px 2px 4px rgba(0, 0, 0, 0.9),
-    1px 1px 2px rgba(0, 0, 0, 0.8),
-    0px 0px 10px rgba(0, 0, 0, 0.7),
-    0px 0px 20px rgba(0, 0, 0, 0.5),
-    0px 0px 30px rgba(0, 0, 0, 0.3);
+    0px 0px 10px rgba(0, 0, 0, 0.7);
 }
 
-/* Responsive adjustments for mobile */
+/* Mobile responsiveness */
 @media (max-width: 768px) {
   .tango-background {
     background-attachment: scroll !important;
   }
-  
-  .content-overlay {
-    margin: 1rem;
-  }
 }
+

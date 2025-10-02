@@ -8,18 +8,21 @@
 ## Code Generation Guidelines
 
 ### React Best Practices
+
 - Functional components with hooks (useState, useEffect, useContext, custom hooks)
 - TypeScript interfaces for all props and state
 - Small, reusable components with proper error boundaries
 - React.memo for performance optimization
 
 ### Firebase Integration
+
 - Firebase v9+ modular SDK, client-side operations only
 - Efficient Firestore queries (avoid N+1 patterns)
 - Proper loading states and error handling
 - Client-side caching to reduce Firebase reads
 
 ### Code Structure
+
 ```
 src/
 ├── components/
@@ -34,6 +37,7 @@ src/
 ```
 
 ### Database Schema
+
 ```typescript
 interface Song {
   id: string;
@@ -59,18 +63,21 @@ interface Rating {
 ## Key Features to Implement
 
 ### Song Search & Discovery
+
 - Debounced search with auto-suggestions from Firestore
 - A-Z filtering with URL routing for deep linking
 - Popular songs sidebar (query by searchCount)
 - Random discovery with efficient document selection
 
 ### AI Integration
+
 - Gemini API for structured JSON song explanations
 - Auto-save AI responses to Firestore with metadata
 - Client-side rate limiting and graceful fallbacks
 
 ### UI/UX Requirements
-- Mobile-first responsive design with Tailwind CSS
+
+- Desktop-first responsive design with Tailwind CSS
 - Loading states with skeleton screens
 - Accessibility (ARIA labels, keyboard navigation)
 - Dark/light theme support
@@ -79,18 +86,22 @@ interface Rating {
 ## MCP Tools Available
 
 ### Context7 Documentation
+
 - `mcp_context7_resolve-library-id` + `mcp_context7_get-library-docs`
 - Use for React, Firebase, Tailwind CSS documentation
 
 ### Firebase MCP
+
 - Activate with `activate_firebase_firebase_tools` and `activate_firebase_firestore_tools`
 - Use for project setup, Firestore operations, deployment
 
 ### GitHub MCP
+
 - Repository operations, PR management, issue tracking
 - Activate appropriate categories as needed
 
 ### Playwright Browser Testing
+
 - UI testing, responsive design validation
 - Activate with `activate_playwright_*` functions
 

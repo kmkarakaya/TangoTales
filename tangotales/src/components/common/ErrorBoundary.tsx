@@ -1,8 +1,8 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import ErrorMessage from './ErrorMessage';
 
 interface Props {
   children: ReactNode;
+  fallback?: ReactNode;
 }
 
 interface State {
@@ -29,14 +29,21 @@ class ErrorBoundary extends Component<Props, State> {
 
   public render() {
     if (this.state.hasError) {
-      return (
-        <div className="min-h-screen flex items-center justify-center p-4">
-          <div className="max-w-md w-full">
-            <ErrorMessage
-              message={this.state.error?.message || 'Something went wrong. Please try again.'}
-              onRetry={this.handleRetry}
-            />
-          </div>
+      return this.props.fallback || (
+        <div className="glass-card p-8 text-center max-w-md mx-auto mt-8">
+          <div className="text-6xl mb-4">🎭</div>
+          <h2 className="text-2xl font-tango font-bold mb-4 text-yellow-400">
+            Oops! Something went wrong
+          </h2>
+          <p className="text-white/80 mb-6 font-body">
+            Don't worry, even the best tango dancers sometimes miss a step.
+          </p>
+          <button 
+            className="btn-primary"
+            onClick={() => window.location.reload()}
+          >
+            Try Again
+          </button>
         </div>
       );
     }
