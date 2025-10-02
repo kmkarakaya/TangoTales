@@ -80,9 +80,10 @@ export const searchSongsByTitle = async (searchQuery: string): Promise<Song[]> =
     // Since Firestore doesn't support case-insensitive queries natively,
     // we fetch all songs and filter client-side
     // This is acceptable for small datasets (free tier constraint)
+    // Order by createdAt desc to show newly researched songs first
     const q = query(
       collection(db, 'songs'),
-      orderBy('searchCount', 'desc')
+      orderBy('createdAt', 'desc')
     );
 
     const querySnapshot = await getDocs(q);

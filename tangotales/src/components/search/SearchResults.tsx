@@ -19,7 +19,8 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     error, 
     hasSearched, 
     showNoResults,
-    loadPopularSongs 
+    loadPopularSongs,
+    handleSearchSubmit 
   } = useSearch();
 
   // Show loading state
@@ -50,7 +51,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   if (showNoResults) {
     return (
       <div className={`${className}`}>
-        <NoResultsFound query={query} />
+        <NoResultsFound query={query} onRefreshSearch={handleSearchSubmit} />
       </div>
     );
   }
@@ -193,9 +194,10 @@ const SongCard: React.FC<SongCardProps> = ({ song }) => {
 
 interface NoResultsFoundProps {
   query: string;
+  onRefreshSearch: () => void;
 }
 
-const NoResultsFound: React.FC<NoResultsFoundProps> = ({ query }) => {
+const NoResultsFound: React.FC<NoResultsFoundProps> = ({ query, onRefreshSearch }) => {
   const [isResearching, setIsResearching] = React.useState(false);
   const [researchError, setResearchError] = React.useState<string | null>(null);
   
@@ -227,7 +229,7 @@ const NoResultsFound: React.FC<NoResultsFoundProps> = ({ query }) => {
       console.log('Song researched and created successfully:', songId);
       
       // Refresh the search to show the new song
-      window.location.reload();
+      onRefreshSearch();
       
     } catch (error) {
       console.error('Failed to research song with AI:', error);
