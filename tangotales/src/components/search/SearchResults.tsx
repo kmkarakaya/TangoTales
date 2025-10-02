@@ -120,7 +120,8 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     hasSearched, 
     showNoResults,
     loadPopularSongs,
-    handleSearchSubmit 
+    handleSearchSubmit,
+    handleSearchChange
   } = useSearch();
   
   const [selectedSong, setSelectedSong] = useState<Song | null>(null);
@@ -199,7 +200,11 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   if (showNoResults) {
     return (
       <div className={`${className}`}>
-        <NoResultsFound query={query} onRefreshSearch={handleSearchSubmit} />
+        <NoResultsFound 
+          query={query} 
+          onRefreshSearch={handleSearchSubmit}
+          onQueryChange={handleSearchChange}
+        />
       </div>
     );
   }
@@ -490,9 +495,10 @@ const SongCard: React.FC<SongCardProps> = ({ song, onClick, showEnhanceButton = 
 interface NoResultsFoundProps {
   query: string;
   onRefreshSearch: () => void;
+  onQueryChange: (newQuery: string) => void;
 }
 
-const NoResultsFound: React.FC<NoResultsFoundProps> = ({ query, onRefreshSearch }) => {
+const NoResultsFound: React.FC<NoResultsFoundProps> = ({ query, onRefreshSearch, onQueryChange }) => {
   const [isResearching, setIsResearching] = React.useState(false);
   const [researchError, setResearchError] = React.useState<string | null>(null);
   
@@ -510,12 +516,19 @@ const NoResultsFound: React.FC<NoResultsFoundProps> = ({ query, onRefreshSearch 
       const { createSongWithAI } = await import('../../services/firestore');
       
       // Create song with AI using the new user-controlled approach
-      const songId = await createSongWithAI(query.trim());
+      const resultSong = await createSongWithAI(query.trim());
       
-      console.log('Song researched and created successfully with AI:', songId);
+      console.log('Song researched and created successfully with AI:', resultSong);
       
-      // Refresh the search to show the new song
-      onRefreshSearch();
+      // If we got a song result and it has a different title than what user searched for,
+      // update the search query to the corrected title so user sees the correct results
+      if (resultSong && resultSong.title && resultSong.title.toLowerCase() !== query.trim().toLowerCase()) {
+        console.log(`🔄 Updating search query from "${query}" to corrected title "${resultSong.title}"`);
+        onQueryChange(resultSong.title);
+      } else {
+        // Same title or no correction needed, just refresh current search
+        onRefreshSearch();
+      }
       
     } catch (error) {
       console.error('Failed to research song with AI:', error);
