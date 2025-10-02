@@ -441,29 +441,19 @@ const NoResultsFound: React.FC<NoResultsFoundProps> = ({ query, onRefreshSearch 
     setResearchError(null);
 
     try {
-      // Import enhanced services dynamically
-      const { enhancedGeminiService } = await import('../../services/enhancedGemini');
-      const { createEnhancedSong } = await import('../../services/firestore');
+      // Import the new user-controlled AI creation function
+      const { createSongWithAI } = await import('../../services/firestore');
       
-      // Research the song with enhanced AI
-      const enhancedResult = await enhancedGeminiService.getEnhancedSongInformation({ 
-        title: query.trim() 
-      });
+      // Create song with AI using the new user-controlled approach
+      const songId = await createSongWithAI(query.trim());
       
-      // Create enhanced song in database
-      const songId = await createEnhancedSong(
-        query.trim(),
-        enhancedResult,
-        enhancedResult.metadata
-      );
-      
-      console.log('Enhanced song researched and created successfully:', songId);
+      console.log('Song researched and created successfully with AI:', songId);
       
       // Refresh the search to show the new song
       onRefreshSearch();
       
     } catch (error) {
-      console.error('Failed to research song with enhanced AI:', error);
+      console.error('Failed to research song with AI:', error);
       setResearchError(error instanceof Error ? error.message : 'Failed to research song');
     } finally {
       setIsResearching(false);

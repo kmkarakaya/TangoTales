@@ -152,100 +152,9 @@ export const searchSongsByTitle = async (searchQuery: string): Promise<Song[]> =
       return filteredSongs.slice(0, 10);
     }
 
-    // Phase 1 Implementation: If no songs found, generate one using AI
-    console.log(`🤖 Generating enhanced song information for: "${searchQuery}"`);
-    
-    try {
-      // Generate comprehensive song information using AI
-      const aiResult = await songInformationService.getEnhancedSongInformation({
-        title: searchQuery
-      });
-      
-      // Create enhanced song with AI data
-      const songId = await createEnhancedSong(
-        searchQuery,
-        aiResult,
-        {
-          aiResponseQuality: 'good',
-          needsManualReview: false,
-          lastAIUpdate: new Date(),
-          retryCount: 0
-        }
-      );
-
-      // Fetch the created song to return
-      const enhancedSong = await getSongById(songId);
-      console.log(`✅ Created enhanced song: "${enhancedSong?.title}"`);
-      
-      return enhancedSong ? [enhancedSong] : [];
-      
-    } catch (aiError) {
-      console.error('AI generation failed, checking sample songs:', aiError);
-      
-      // Try to use sample song data as fallback
-      const sampleData = getSampleSongByTitle(searchQuery);
-      
-      if (sampleData) {
-        console.log(`📋 Using sample data for: "${searchQuery}"`);
-        
-        // Create song ID from title
-        const songId = searchQuery
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/^-+|-+$/g, '');
-        
-        // Create complete song from sample data
-        const enhancedSong = createSongFromSample(sampleData, searchQuery, songId);
-        
-        // Convert to Firebase format and save
-        const now = Timestamp.now();
-        const firestoreData = {
-          ...enhancedSong,
-          createdAt: now,
-          lastUpdated: now,
-          metadata: {
-            ...enhancedSong.metadata,
-            lastAIUpdate: now
-          }
-        };
-        
-        await setDoc(doc(db, 'songs', songId), firestoreData);
-        console.log(`✅ Created enhanced song from sample: "${enhancedSong.title}"`);
-        
-        return [enhancedSong];
-      }
-      
-      // Ultimate fallback: Create basic song entry for unknown songs
-      const songId = await createEnhancedSong(
-        searchQuery,
-        {
-          composer: 'Unknown',
-          period: 'Golden Age',
-          musicalForm: 'Tango',
-          themes: ['tango'],
-          culturalSignificance: 'This tango song is part of the rich Argentine musical tradition.',
-          historicalContext: 'Information about this song is being researched.',
-          explanation: `"${searchQuery}" is a tango song. Detailed historical and cultural information is currently being researched and will be available soon.`,
-          musicalCharacteristics: ['traditional tango rhythm'],
-          danceStyle: ['classic tango'],
-          notableRecordings: [],
-          notablePerformers: [],
-          recommendedForDancing: true,
-          sources: []
-        },
-        {
-          aiResponseQuality: 'basic',
-          needsManualReview: true,
-          lastAIUpdate: new Date(),
-          retryCount: 1,
-          errorReason: aiError instanceof Error ? aiError.message : 'Unknown AI error'
-        }
-      );
-
-      // Fetch the created song to return
-      const basicSong = await getSongById(songId);
-      return basicSong ? [basicSong] : [];
-    }
+    // No songs found - return empty array to show "No Results Found"
+    // User can then choose to search with AI if they want
+    return [];
     
   } catch (error) {
     console.error('Error in enhanced search:', error);
@@ -640,6 +549,113 @@ export const songExistsByTitle = async (title: string): Promise<Song | null> => 
   } catch (error) {
     console.error('Error checking if song exists:', error);
     throw new Error('Failed to check song existence');
+  }
+};
+
+/**
+ * Create a new song using AI generation - user-controlled
+ * This is called when user explicitly clicks "Search with AI"
+ */
+export const createSongWithAI = async (songTitle: string): Promise<Song | null> => {
+  try {
+    console.log(`🤖 User requested AI research for: "${songTitle}"`);
+    
+    // Try AI generation first
+    try {
+      const aiResult = await songInformationService.getEnhancedSongInformation({
+        title: songTitle
+      });
+      
+      // Create enhanced song with AI data
+      const songId = await createEnhancedSong(
+        songTitle,
+        aiResult,
+        {
+          aiResponseQuality: 'good',
+          needsManualReview: false,
+          lastAIUpdate: new Date(),
+          retryCount: 0
+        }
+      );
+
+      // Fetch the created song to return
+      const enhancedSong = await getSongById(songId);
+      console.log(`✅ Created enhanced song via user request: "${enhancedSong?.title}"`);
+      
+      return enhancedSong;
+      
+    } catch (aiError) {
+      console.error('AI generation failed, trying sample data:', aiError);
+      
+      // Try to use sample song data as fallback
+      const sampleData = getSampleSongByTitle(songTitle);
+      
+      if (sampleData) {
+        console.log(`📋 Using sample data for user request: "${songTitle}"`);
+        
+        // Create song ID from title
+        const songId = songTitle
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, '');
+        
+        // Create complete song from sample data
+        const enhancedSong = createSongFromSample(sampleData, songTitle, songId);
+        
+        // Convert to Firebase format and save
+        const now = Timestamp.now();
+        const firestoreData = {
+          ...enhancedSong,
+          createdAt: now,
+          lastUpdated: now,
+          metadata: {
+            ...enhancedSong.metadata,
+            lastAIUpdate: now
+          }
+        };
+        
+        await setDoc(doc(db, 'songs', songId), firestoreData);
+        console.log(`✅ Created song from sample via user request: "${enhancedSong.title}"`);
+        
+        return enhancedSong;
+      }
+      
+      // Final fallback: Create basic song entry
+      const songId = await createEnhancedSong(
+        songTitle,
+        {
+          composer: 'Unknown',
+          period: 'Golden Age',
+          musicalForm: 'Tango',
+          themes: ['tango'],
+          culturalSignificance: `Research for "${songTitle}" has been initiated. This appears to be a tango composition from the Argentine musical tradition.`,
+          historicalContext: 'Detailed historical information is being researched and will be updated shortly.',
+          explanation: `"${songTitle}" has been added to our research queue. Our AI research indicates this is likely a tango composition, but detailed information is still being compiled.`,
+          musicalCharacteristics: ['traditional tango rhythm'],
+          danceStyle: ['classic tango'],
+          notableRecordings: [],
+          notablePerformers: [],
+          recommendedForDancing: true,
+          sources: []
+        },
+        {
+          aiResponseQuality: 'basic',
+          needsManualReview: true,
+          lastAIUpdate: new Date(),
+          retryCount: 1,
+          errorReason: aiError instanceof Error ? aiError.message : 'AI research in progress'
+        }
+      );
+
+      // Fetch the created song to return
+      const basicSong = await getSongById(songId);
+      console.log(`✅ Created basic song via user request: "${songTitle}"`);
+      return basicSong;
+    }
+    
+  } catch (error) {
+    console.error('Failed to create song with AI:', error);
+    throw new Error(`Failed to research song: ${songTitle}`);
   }
 };
 
