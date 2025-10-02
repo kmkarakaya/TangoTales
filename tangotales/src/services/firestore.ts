@@ -16,8 +16,6 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { Song, Rating, SongMetadata } from '../types/song';
-import { songInformationService } from './enhancedGemini';
-import { getSampleSongByTitle, createSongFromSample } from '../utils/sampleSongs';
 
 // Helper function to convert Firestore timestamp to Date
 const convertTimestamp = (timestamp: any): Date => {
@@ -152,100 +150,9 @@ export const searchSongsByTitle = async (searchQuery: string): Promise<Song[]> =
       return filteredSongs.slice(0, 10);
     }
 
-    // Phase 1 Implementation: If no songs found, generate one using AI
-    console.log(`🤖 Generating enhanced song information for: "${searchQuery}"`);
-    
-    try {
-      // Generate comprehensive song information using AI
-      const aiResult = await songInformationService.getEnhancedSongInformation({
-        title: searchQuery
-      });
-      
-      // Create enhanced song with AI data
-      const songId = await createEnhancedSong(
-        searchQuery,
-        aiResult,
-        {
-          aiResponseQuality: 'good',
-          needsManualReview: false,
-          lastAIUpdate: new Date(),
-          retryCount: 0
-        }
-      );
-
-      // Fetch the created song to return
-      const enhancedSong = await getSongById(songId);
-      console.log(`✅ Created enhanced song: "${enhancedSong?.title}"`);
-      
-      return enhancedSong ? [enhancedSong] : [];
-      
-    } catch (aiError) {
-      console.error('AI generation failed, checking sample songs:', aiError);
-      
-      // Try to use sample song data as fallback
-      const sampleData = getSampleSongByTitle(searchQuery);
-      
-      if (sampleData) {
-        console.log(`📋 Using sample data for: "${searchQuery}"`);
-        
-        // Create song ID from title
-        const songId = searchQuery
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/^-+|-+$/g, '');
-        
-        // Create complete song from sample data
-        const enhancedSong = createSongFromSample(sampleData, searchQuery, songId);
-        
-        // Convert to Firebase format and save
-        const now = Timestamp.now();
-        const firestoreData = {
-          ...enhancedSong,
-          createdAt: now,
-          lastUpdated: now,
-          metadata: {
-            ...enhancedSong.metadata,
-            lastAIUpdate: now
-          }
-        };
-        
-        await setDoc(doc(db, 'songs', songId), firestoreData);
-        console.log(`✅ Created enhanced song from sample: "${enhancedSong.title}"`);
-        
-        return [enhancedSong];
-      }
-      
-      // Ultimate fallback: Create basic song entry for unknown songs
-      const songId = await createEnhancedSong(
-        searchQuery,
-        {
-          composer: 'Unknown',
-          period: 'Golden Age',
-          musicalForm: 'Tango',
-          themes: ['tango'],
-          culturalSignificance: 'This tango song is part of the rich Argentine musical tradition.',
-          historicalContext: 'Information about this song is being researched.',
-          explanation: `"${searchQuery}" is a tango song. Detailed historical and cultural information is currently being researched and will be available soon.`,
-          musicalCharacteristics: ['traditional tango rhythm'],
-          danceStyle: ['classic tango'],
-          notableRecordings: [],
-          notablePerformers: [],
-          recommendedForDancing: true,
-          sources: []
-        },
-        {
-          aiResponseQuality: 'basic',
-          needsManualReview: true,
-          lastAIUpdate: new Date(),
-          retryCount: 1,
-          errorReason: aiError instanceof Error ? aiError.message : 'Unknown AI error'
-        }
-      );
-
-      // Fetch the created song to return
-      const basicSong = await getSongById(songId);
-      return basicSong ? [basicSong] : [];
-    }
+    // No songs found - return empty array to allow user-controlled AI generation
+    // The NoResultsFound component will show "Research with AI" button
+    return [];
     
   } catch (error) {
     console.error('Error in enhanced search:', error);
