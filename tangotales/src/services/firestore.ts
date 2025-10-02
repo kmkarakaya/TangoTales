@@ -16,6 +16,7 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { Song, Rating } from '../types/song';
+import { songInformationService } from './enhancedGemini';
 
 // Helper function to convert Firestore timestamp to Date
 const convertTimestamp = (timestamp: any): Date => {
@@ -30,15 +31,59 @@ const convertTimestamp = (timestamp: any): Date => {
 
 // Helper function to convert Song data from Firestore
 const convertSongData = (id: string, data: DocumentData): Song => ({
+  // Primary identification
   id,
   title: data.title || '',
+  originalTitle: data.originalTitle,
+  alternativeTitles: data.alternativeTitles || [],
+  
+  // Factual information
+  composer: data.composer || 'Unknown',
+  lyricist: data.lyricist,
+  yearComposed: data.yearComposed,
+  period: data.period || 'Golden Age',
+  musicalForm: data.musicalForm || 'Tango',
+  
+  // Cultural context
+  themes: data.themes || [],
+  culturalSignificance: data.culturalSignificance || '',
+  historicalContext: data.historicalContext || '',
+  
+  // Musical analysis
+  keySignature: data.keySignature,
+  tempo: data.tempo,
+  musicalCharacteristics: data.musicalCharacteristics || [],
+  danceStyle: data.danceStyle || [],
+  
+  // Performance information
+  notableRecordings: data.notableRecordings || [],
+  notablePerformers: data.notablePerformers || [],
+  recommendedForDancing: data.recommendedForDancing !== undefined ? data.recommendedForDancing : true,
+  danceRecommendations: data.danceRecommendations,
+  
+  // Narrative elements
+  story: data.story,
+  inspiration: data.inspiration,
+  personalAnecdotes: data.personalAnecdotes,
+  
+  // Technical metadata (existing fields)
   explanation: data.explanation || '',
   sources: data.sources || [],
-  createdAt: convertTimestamp(data.createdAt),
   searchCount: data.searchCount || 0,
   averageRating: data.averageRating || 0,
   totalRatings: data.totalRatings || 0,
-  tags: data.tags || []
+  tags: data.tags || [],
+  createdAt: convertTimestamp(data.createdAt),
+  lastUpdated: convertTimestamp(data.lastUpdated || data.createdAt),
+  
+  // Quality assurance metadata
+  metadata: data.metadata ? {
+    aiResponseQuality: data.metadata.aiResponseQuality || 'partial',
+    needsManualReview: data.metadata.needsManualReview || false,
+    lastAIUpdate: convertTimestamp(data.metadata.lastAIUpdate),
+    errorReason: data.metadata.errorReason,
+    retryCount: data.metadata.retryCount || 0
+  } : undefined
 });
 
 // Helper function to convert Rating data from Firestore
@@ -67,7 +112,8 @@ export const getSongById = async (songId: string): Promise<Song | null> => {
 };
 
 /**
- * Search songs by title (case-insensitive partial match)
+ * Phase 1 Enhanced Search: AI-powered search with Clean Slate Approach
+ * If song not found, generate comprehensive information using AI and save it
  */
 export const searchSongsByTitle = async (searchQuery: string): Promise<Song[]> => {
   try {
@@ -77,10 +123,7 @@ export const searchSongsByTitle = async (searchQuery: string): Promise<Song[]> =
       return [];
     }
 
-    // Since Firestore doesn't support case-insensitive queries natively,
-    // we fetch all songs and filter client-side
-    // This is acceptable for small datasets (free tier constraint)
-    // Order by createdAt desc to show newly researched songs first
+    // First, search existing songs in database
     const q = query(
       collection(db, 'songs'),
       orderBy('createdAt', 'desc')
@@ -89,20 +132,89 @@ export const searchSongsByTitle = async (searchQuery: string): Promise<Song[]> =
     const querySnapshot = await getDocs(q);
     const allSongs = querySnapshot.docs.map(doc => convertSongData(doc.id, doc.data()));
     
-    // Filter songs by case-insensitive title match (with Unicode normalization for accented characters)
+    // Filter songs by case-insensitive title match
     const filteredSongs = allSongs.filter(song => {
       const titleLower = song.title.toLowerCase();
       const titleNormalized = song.title.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
       const queryNormalized = normalizedQuery.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
       
-      // Check both original and normalized versions
       return titleLower.includes(normalizedQuery) || 
              titleNormalized.includes(queryNormalized);
     });
     
-    return filteredSongs.slice(0, 10); // Limit to 10 results
+    // If we found existing songs, return them
+    if (filteredSongs.length > 0) {
+      // Increment search counts for found songs
+      filteredSongs.forEach(song => {
+        incrementSearchCount(song.id).catch(console.error);
+      });
+      return filteredSongs.slice(0, 10);
+    }
+
+    // Phase 1 Implementation: If no songs found, generate one using AI
+    console.log(`🤖 Generating enhanced song information for: "${searchQuery}"`);
+    
+    try {
+      // Generate comprehensive song information using AI
+      const aiResult = await songInformationService.getEnhancedSongInformation({
+        title: searchQuery
+      });
+      
+      // Create enhanced song with AI data
+      const songId = await createEnhancedSong(
+        searchQuery,
+        aiResult,
+        {
+          aiResponseQuality: 'good',
+          needsManualReview: false,
+          lastAIUpdate: new Date(),
+          retryCount: 0
+        }
+      );
+
+      // Fetch the created song to return
+      const enhancedSong = await getSongById(songId);
+      console.log(`✅ Created enhanced song: "${enhancedSong?.title}"`);
+      
+      return enhancedSong ? [enhancedSong] : [];
+      
+    } catch (aiError) {
+      console.error('AI generation failed, creating basic song entry:', aiError);
+      
+      // Fallback: Create basic song entry for unknown songs
+      const songId = await createEnhancedSong(
+        searchQuery,
+        {
+          composer: 'Unknown',
+          period: 'Golden Age',
+          musicalForm: 'Tango',
+          themes: ['tango'],
+          culturalSignificance: 'This tango song is part of the rich Argentine musical tradition.',
+          historicalContext: 'Information about this song is being researched.',
+          explanation: `"${searchQuery}" is a tango song. Detailed historical and cultural information is currently being researched and will be available soon.`,
+          musicalCharacteristics: ['traditional tango rhythm'],
+          danceStyle: ['classic tango'],
+          notableRecordings: [],
+          notablePerformers: [],
+          recommendedForDancing: true,
+          sources: []
+        },
+        {
+          aiResponseQuality: 'basic',
+          needsManualReview: true,
+          lastAIUpdate: new Date(),
+          retryCount: 1,
+          errorReason: aiError instanceof Error ? aiError.message : 'Unknown AI error'
+        }
+      );
+
+      // Fetch the created song to return
+      const basicSong = await getSongById(songId);
+      return basicSong ? [basicSong] : [];
+    }
+    
   } catch (error) {
-    console.error('Error searching songs by title:', error);
+    console.error('Error in enhanced search:', error);
     throw new Error('Failed to search songs');
   }
 };
@@ -164,7 +276,7 @@ export const getSongsByLetter = async (letter: string): Promise<Song[]> => {
 /**
  * Create a new song in Firestore
  */
-export const createSong = async (songData: Omit<Song, 'id' | 'createdAt' | 'searchCount' | 'averageRating' | 'totalRatings'>): Promise<string> => {
+export const createSong = async (songData: Omit<Song, 'id' | 'createdAt' | 'lastUpdated' | 'searchCount' | 'averageRating' | 'totalRatings'>): Promise<string> => {
   try {
     // Generate a document ID from the song title (URL-friendly)
     const songId = songData.title
@@ -172,15 +284,54 @@ export const createSong = async (songData: Omit<Song, 'id' | 'createdAt' | 'sear
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '');
 
+    const now = Timestamp.now();
     const newSong = {
+      // Primary identification
       title: songData.title,
-      explanation: songData.explanation,
-      sources: songData.sources,
-      tags: songData.tags,
-      createdAt: Timestamp.now(),
+      originalTitle: songData.originalTitle,
+      alternativeTitles: songData.alternativeTitles || [],
+      
+      // Factual information
+      composer: songData.composer || 'Unknown',
+      lyricist: songData.lyricist,
+      yearComposed: songData.yearComposed,
+      period: songData.period || 'Golden Age',
+      musicalForm: songData.musicalForm || 'Tango',
+      
+      // Cultural context
+      themes: songData.themes || [],
+      culturalSignificance: songData.culturalSignificance || '',
+      historicalContext: songData.historicalContext || '',
+      
+      // Musical analysis
+      keySignature: songData.keySignature,
+      tempo: songData.tempo,
+      musicalCharacteristics: songData.musicalCharacteristics || [],
+      danceStyle: songData.danceStyle || [],
+      
+      // Performance information
+      notableRecordings: songData.notableRecordings || [],
+      notablePerformers: songData.notablePerformers || [],
+      recommendedForDancing: songData.recommendedForDancing !== undefined ? songData.recommendedForDancing : true,
+      danceRecommendations: songData.danceRecommendations,
+      
+      // Narrative elements
+      story: songData.story,
+      inspiration: songData.inspiration,
+      personalAnecdotes: songData.personalAnecdotes,
+      
+      // Technical metadata
+      explanation: songData.explanation || '',
+      sources: songData.sources || [],
+      tags: songData.tags || [],
+      createdAt: now,
+      lastUpdated: now,
       searchCount: 1, // Initialize with 1 since it was just searched
       averageRating: 0,
-      totalRatings: 0
+      totalRatings: 0,
+      
+      // Quality assurance metadata
+      metadata: songData.metadata
     };
 
     await setDoc(doc(db, 'songs', songId), newSong);
@@ -188,6 +339,86 @@ export const createSong = async (songData: Omit<Song, 'id' | 'createdAt' | 'sear
   } catch (error) {
     console.error('Error creating song:', error);
     throw new Error('Failed to create song');
+  }
+};
+
+/**
+ * Create an enhanced song from AI-generated data
+ */
+export const createEnhancedSong = async (
+  title: string, 
+  enhancedData: any,
+  metadata: any
+): Promise<string> => {
+  try {
+    // Generate a document ID from the song title (URL-friendly)
+    const songId = title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+
+    const now = Timestamp.now();
+    const enhancedSong = {
+      // Primary identification
+      title: title,
+      originalTitle: enhancedData.originalTitle,
+      alternativeTitles: enhancedData.alternativeTitles || [],
+      
+      // Factual information from AI
+      composer: enhancedData.composer || 'Unknown',
+      lyricist: enhancedData.lyricist,
+      yearComposed: enhancedData.yearComposed,
+      period: enhancedData.period || 'Golden Age',
+      musicalForm: enhancedData.musicalForm || 'Tango',
+      
+      // Cultural context from AI
+      themes: enhancedData.themes || [],
+      culturalSignificance: enhancedData.culturalSignificance || '',
+      historicalContext: enhancedData.historicalContext || '',
+      
+      // Musical analysis from AI
+      keySignature: enhancedData.keySignature,
+      tempo: enhancedData.tempo,
+      musicalCharacteristics: enhancedData.musicalCharacteristics || [],
+      danceStyle: enhancedData.danceStyle || [],
+      
+      // Performance information from AI
+      notableRecordings: enhancedData.notableRecordings || [],
+      notablePerformers: enhancedData.notablePerformers || [],
+      recommendedForDancing: enhancedData.recommendedForDancing !== undefined ? 
+        enhancedData.recommendedForDancing : true,
+      danceRecommendations: enhancedData.danceRecommendations,
+      
+      // Narrative elements from AI
+      story: enhancedData.story,
+      inspiration: enhancedData.inspiration,
+      personalAnecdotes: enhancedData.personalAnecdotes,
+      
+      // Technical metadata
+      explanation: enhancedData.explanation || '',
+      sources: enhancedData.sources || [],
+      tags: enhancedData.themes || [],
+      createdAt: now,
+      lastUpdated: now,
+      searchCount: 1,
+      averageRating: 0,
+      totalRatings: 0,
+      
+      // AI Quality metadata
+      metadata: {
+        aiResponseQuality: metadata.aiResponseQuality,
+        needsManualReview: metadata.needsManualReview,
+        lastAIUpdate: Timestamp.fromDate(metadata.lastAIUpdate),
+        errorReason: metadata.errorReason,
+        retryCount: metadata.retryCount
+      }
+    };
+
+    await setDoc(doc(db, 'songs', songId), enhancedSong);
+    return songId;
+  } catch (error) {
+    console.error('Error creating enhanced song:', error);
+    throw new Error('Failed to create enhanced song');
   }
 };
 

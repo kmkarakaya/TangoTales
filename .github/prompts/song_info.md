@@ -23,10 +23,12 @@ This plan outlines the transformation of TangoTales from a basic song search too
 - ❌ **Simple Database**: Single collection, no complex normalization
 
 ### Success Criteria for MVP
-1. **User Engagement**: Users spend more time viewing song information
-2. **Information Quality**: Rich, accurate tango song data displayed clearly  
-3. **Technical Performance**: Fast loading of enhanced song information
-4. **User Feedback**: Positive response to detailed song information
+1. **User Engagement**: Users spend more time viewing song information (>2x current time on page)
+2. **Information Quality**: Rich, accurate tango song data displayed clearly (>80% field completion rate)
+3. **Technical Performance**: Fast loading of enhanced song information (<3s initial load, <1s cached)
+4. **User Feedback**: Positive response to detailed song information (>4.0/5.0 user rating)
+5. **AI Success Rate**: >85% successful AI response parsing and validation
+6. **Cost Efficiency**: AI API costs <$0.10 per song information generation
 
 ## Current State Analysis
 
@@ -818,23 +820,57 @@ async function setupDevelopmentDatabase() {
 ## Technical Implementation Details
 
 ### Firebase Considerations
-- **Free Tier Constraints**: All logic remains client-side
-- **Query Efficiency**: Use composite indexes for complex filtering
-- **Data Transfer**: Minimize reads with efficient query design
+- **Free Tier Constraints**: All logic remains client-side (no Cloud Functions)
+- **Read Limits**: Monitor 50k daily read limit for free tier
+- **Document Size**: Keep documents <1MB (enhanced song data ~5-10KB each)
 - **Caching Strategy**: Implement client-side caching for frequently accessed data
+- **Offline Support**: Cache enhanced song data in localStorage for offline viewing
 
 ### AI Integration Strategy
-- **Rate Limiting**: Implement client-side rate limiting for API calls
-- **Cost Management**: Monitor and optimize prompt length and frequency
+- **Rate Limiting**: Implement client-side rate limiting (max 60 requests/minute)
+- **Cost Management**: Monitor token usage (~500-1000 tokens per song)
+- **Request Batching**: Avoid concurrent requests to same song
 - **Error Handling**: Graceful degradation when AI services are unavailable
 - **Response Validation**: Strict JSON schema validation with fallbacks
-- **Schema Compliance**: Multi-tier approach for handling malformed responses
+- **Timeout Handling**: 30s timeout for initial request, 15s for follow-ups
+
+### Security Considerations
+- **API Key Protection**: Use environment variables, never expose in client bundle
+- **Input Sanitization**: Validate and sanitize all user inputs before AI requests
+- **CORS Configuration**: Proper Firestore security rules for enhanced schema
+- **Content Security Policy**: Restrict external resource loading
+- **Rate Limiting Protection**: Implement client-side throttling to prevent abuse
+
+### Performance Optimization
+- **Code Splitting**: Lazy load enhanced UI components
+- **Image Optimization**: Use WebP format for any future image assets
+- **Bundle Analysis**: Monitor bundle size impact of new dependencies (@google/genai)
+- **Memory Management**: Clear unused chat sessions and cached data
+- **Loading Strategies**: Progressive enhancement with skeleton screens
 
 ### UI/UX Principles
 - **Progressive Disclosure**: Show basic info first, detailed on demand
-- **Responsive Design**: Ensure rich information displays work on all devices
-- **Accessibility**: Maintain ARIA compliance for complex information structures
-- **Performance**: Lazy load detailed information to maintain fast initial renders
+- **Responsive Design**: Mobile-first approach for complex information layouts
+- **Accessibility**: WCAG 2.1 AA compliance with proper ARIA labels
+- **Loading States**: Skeleton screens while AI processes information
+- **Error States**: Clear error messages with retry options
+- **Performance**: <3s initial page load, <1s for cached content
+
+### Development Environment Setup
+```bash
+# Required environment variables
+REACT_APP_GEMINI_API_KEY=your_gemini_api_key
+REACT_APP_FIREBASE_API_KEY=your_firebase_api_key
+REACT_APP_FIREBASE_PROJECT_ID=your_project_id
+
+# Development dependencies
+npm install @google/genai
+npm install --save-dev @types/node
+
+# Build and deployment
+npm run build
+firebase deploy --only hosting
+```
 
 ## Success Metrics
 
@@ -894,5 +930,70 @@ async function setupDevelopmentDatabase() {
 - **Data Quality**: Multiple validation layers and manual review processes
 - **Performance**: Monitor and optimize for Firebase free tier limits
 - **User Adoption**: Gradual rollout with user feedback collection
+- **API Cost Control**: Daily spending limits and usage monitoring
+- **Scalability**: Client-side architecture ready for future scaling
 
-This comprehensive plan transforms TangoTales into a rich, authoritative source for tango music information while maintaining the technical constraints and user experience principles established in the current implementation.
+## Quality Assurance Strategy
+
+### Testing Approach
+```javascript
+// Unit Tests
+- Song interface validation
+- JSON parsing utilities
+- AI response sanitization
+- Error handling functions
+
+// Integration Tests  
+- AI chat session management
+- Firebase data operations
+- End-to-end song information flow
+
+// UI Tests (Playwright)
+- Enhanced song detail display
+- Progressive disclosure functionality
+- Responsive design validation
+- Loading state behavior
+- Error state handling
+```
+
+### Content Quality Control
+- **AI Response Review**: Sample manual review of AI-generated content
+- **Fact Checking**: Validate historical and factual claims for popular songs
+- **Cultural Sensitivity**: Ensure respectful representation of tango culture
+- **Source Attribution**: Track and document information sources when available
+
+### Performance Monitoring
+```javascript
+// Key Metrics to Track
+const performanceMetrics = {
+  aiResponseTime: 'Time from request to parsed response',
+  uiRenderTime: 'Time to display enhanced information',
+  errorRate: 'Percentage of failed AI requests',
+  retrySuccessRate: 'Success rate of targeted field requests',
+  userEngagement: 'Time spent viewing enhanced song details',
+  costPerSong: 'AI API cost per song information generation'
+};
+```
+
+## Deployment Strategy
+
+### MVP Rollout Plan
+1. **Phase 1**: Deploy to staging with sample songs for internal testing
+2. **Phase 2**: Limited beta with 10-20 enhanced songs for user feedback
+3. **Phase 3**: Full MVP release with AI-powered song enhancement
+4. **Phase 4**: Monitor, optimize, and gather feedback for future enhancements
+
+### Rollback Plan
+- **Feature Toggle**: Ability to disable enhanced features and revert to basic display
+- **Database Backup**: Regular backups before major schema updates
+- **Gradual Migration**: Enhanced songs marked with metadata for easy identification
+- **Fallback UI**: Basic song display if enhanced data unavailable
+
+### Documentation Requirements
+- **API Documentation**: Gemini integration patterns and best practices
+- **Component Documentation**: Enhanced UI component usage and props
+- **Database Schema**: Field definitions and validation rules
+- **Deployment Guide**: Step-by-step deployment and configuration
+- **Troubleshooting Guide**: Common issues and resolution steps
+
+This comprehensive plan transforms TangoTales into a rich, authoritative source for tango music information while maintaining technical excellence, user experience focus, and sustainable development practices.

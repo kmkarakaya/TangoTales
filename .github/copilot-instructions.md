@@ -112,4 +112,21 @@ interface Rating {
 3. **Testing**: Playwright for responsive design validation
 4. **Collaboration**: GitHub MCP for repository management
 
+## Testing Requirements
+
+**MANDATORY**: After any development work, you MUST test the UI using Playwright MCP tools:
+
+1. **Activate Playwright Tools**: Use `activate_playwright_*` functions to access browser testing capabilities
+2. **UI Validation**: Test responsive design, component functionality, and user interactions
+3. **Cross-browser Testing**: Verify compatibility across different viewport sizes
+4. **Error Scenarios**: Test loading states, error boundaries, and edge cases
+5. **Accessibility**: Validate keyboard navigation and screen reader compatibility
+
+**Testing Workflow**:
+- Navigate to http://localhost:3001 using Playwright browser navigation
+- Test search functionality with real queries
+- Verify AI-generated content displays correctly
+- Check responsive design on mobile/tablet viewports
+- Test error states and loading indicators
+
 **Remember**: Maintain free-tier Firebase constraints - no server-side code, Cloud Functions, or Admin SDK usage.

@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useSearch } from '../../hooks/useSearch';
 import { Song } from '../../types/song';
 import { LoadingSpinner, ErrorMessage } from '../common';
+import { EnhancedSongDetail } from '../songs/EnhancedSongDetail';
 
 interface SearchResultsProps {
   className?: string;
@@ -22,6 +23,8 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     loadPopularSongs,
     handleSearchSubmit 
   } = useSearch();
+  
+  const [selectedSong, setSelectedSong] = useState<Song | null>(null);
 
   // Show loading state
   if (loading) {
@@ -60,7 +63,19 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   if (hasSearched && results.length > 0) {
     return (
       <div className={`${className}`}>
-        <SearchResultsList results={results} query={query} />
+        {selectedSong ? (
+          <EnhancedSongDetail 
+            song={selectedSong} 
+            onClose={() => setSelectedSong(null)}
+            className="max-w-4xl mx-auto"
+          />
+        ) : (
+          <SearchResultsList 
+            results={results} 
+            query={query} 
+            onSongClick={setSelectedSong}
+          />
+        )}
       </div>
     );
   }
@@ -80,9 +95,10 @@ const SearchResults: React.FC<SearchResultsProps> = ({
 interface SearchResultsListProps {
   results: Song[];
   query: string;
+  onSongClick: (song: Song) => void;
 }
 
-const SearchResultsList: React.FC<SearchResultsListProps> = ({ results, query }) => {
+const SearchResultsList: React.FC<SearchResultsListProps> = ({ results, query, onSongClick }) => {
   return (
     <div className="space-y-6">
       {/* Results Header */}
@@ -99,7 +115,7 @@ const SearchResultsList: React.FC<SearchResultsListProps> = ({ results, query })
       {/* Results List */}
       <div className="space-y-4">
         {results.map((song) => (
-          <SongCard key={song.id} song={song} />
+          <SongCard key={song.id} song={song} onClick={() => onSongClick(song)} />
         ))}
       </div>
     </div>
@@ -108,9 +124,10 @@ const SearchResultsList: React.FC<SearchResultsListProps> = ({ results, query })
 
 interface SongCardProps {
   song: Song;
+  onClick?: () => void;
 }
 
-const SongCard: React.FC<SongCardProps> = ({ song }) => {
+const SongCard: React.FC<SongCardProps> = ({ song, onClick }) => {
   // Format date
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('en-US', {
@@ -126,71 +143,139 @@ const SongCard: React.FC<SongCardProps> = ({ song }) => {
     return text.substring(0, maxLength) + '...';
   };
 
-  return (
-    <div className="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-all duration-200">
-      {/* Song Title */}
-      <h3 className="text-2xl font-bold text-red-700 mb-3">
-        <span className="text-lg">🎵</span> {song.title}
-      </h3>
+  // Enhanced info display
+  const formatPeriod = (period: string) => {
+    const periodColors = {
+      'Pre-Golden Age': 'bg-amber-100 text-amber-800',
+      'Golden Age': 'bg-yellow-100 text-yellow-800',
+      'Post-Golden Age': 'bg-orange-100 text-orange-800',
+      'Contemporary': 'bg-blue-100 text-blue-800'
+    };
+    
+    return (
+      <span className={`px-2 py-1 rounded-full text-xs font-medium ${periodColors[period as keyof typeof periodColors] || 'bg-gray-100 text-gray-800'}`}>
+        {period}
+      </span>
+    );
+  };
 
-      {/* Song Stats */}
-      <div className="flex items-center space-x-4 mb-4 text-sm text-gray-600">
-        <div className="flex items-center">
-          <svg className="w-3 h-3 mr-1" style={{width: '12px', height: '12px'}} fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-          </svg>
-          {song.searchCount} searches
-        </div>
-        
-        {song.averageRating > 0 && (
-          <div className="flex items-center">
-            <svg className="w-3 h-3 mr-1 text-yellow-500" style={{width: '12px', height: '12px'}} fill="currentColor" viewBox="0 0 20 20">
-              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-            </svg>
-            {song.averageRating.toFixed(1)} ({song.totalRatings} ratings)
+  const formatMusicalForm = (form: string) => {
+    const formColors = {
+      'Tango': 'bg-red-100 text-red-800',
+      'Vals': 'bg-blue-100 text-blue-800',
+      'Milonga': 'bg-green-100 text-green-800',
+      'Candombe': 'bg-purple-100 text-purple-800',
+      'Other': 'bg-gray-100 text-gray-800'
+    };
+    
+    return (
+      <span className={`px-2 py-1 rounded-full text-xs font-medium ${formColors[form as keyof typeof formColors] || 'bg-gray-100 text-gray-800'}`}>
+        {form}
+      </span>
+    );
+  };
+
+  return (
+    <div 
+      onClick={onClick}
+      className="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg hover:bg-gray-50 transition-all duration-200 border-l-4 border-red-500"
+    >
+      {/* Header with Title and Tags */}
+      <div className="flex justify-between items-start mb-4">
+        <div className="flex-1">
+          <h3 className="text-2xl font-bold text-red-700 mb-2">
+            🎵 {song.title}
+          </h3>
+          <div className="flex flex-wrap gap-2 mb-2">
+            {formatMusicalForm(song.musicalForm)}
+            {formatPeriod(song.period)}
+            {song.yearComposed && (
+              <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs">
+                {song.yearComposed}
+              </span>
+            )}
+            {song.recommendedForDancing && (
+              <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs">
+                ♪ Dance
+              </span>
+            )}
           </div>
-        )}
-        
-        <div className="text-gray-500">
-          Added {formatDate(song.createdAt)}
+        </div>
+        <div className="text-right">
+          <div className="text-sm text-gray-500 mb-1">
+            {song.searchCount} searches
+          </div>
+          {song.averageRating > 0 && (
+            <div className="flex items-center text-sm text-yellow-600">
+              ⭐ {song.averageRating.toFixed(1)} ({song.totalRatings})
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Song Explanation Preview */}
-      {song.explanation && (
-        <p className="text-gray-700 mb-4 leading-relaxed">
-          {truncateText(song.explanation)}
-        </p>
-      )}
-
-      {/* Tags */}
-      {song.tags.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-4">
-          {song.tags.slice(0, 5).map((tag, index) => (
-            <span 
-              key={index}
-              className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm font-medium"
-            >
-              {tag}
-            </span>
-          ))}
-          {song.tags.length > 5 && (
-            <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">
-              +{song.tags.length - 5} more
-            </span>
+      {/* Enhanced Information Preview */}
+      <div className="space-y-3">
+        {/* Composer */}
+        <div>
+          <span className="font-medium text-gray-700">Composer:</span> 
+          <span className="text-gray-600 ml-2">{song.composer}</span>
+          {song.lyricist && song.lyricist !== song.composer && (
+            <span className="text-gray-600"> • <span className="font-medium">Lyricist:</span> {song.lyricist}</span>
           )}
         </div>
-      )}
 
-      {/* Sources */}
-      {song.sources.length > 0 && (
-        <div className="text-sm text-gray-600">
-          <span className="font-medium">Sources:</span> {song.sources.length} reference{song.sources.length !== 1 ? 's' : ''}
+        {/* Cultural Significance */}
+        {song.culturalSignificance && (
+          <p className="text-gray-700 leading-relaxed">
+            {truncateText(song.culturalSignificance, 150)}
+          </p>
+        )}
+
+        {/* Themes */}
+        {song.themes && song.themes.length > 0 && (
+          <div className="flex items-center">
+            <span className="font-medium text-gray-700 mr-2">Themes:</span>
+            <div className="flex flex-wrap gap-1">
+              {song.themes.slice(0, 4).map((theme, index) => (
+                <span key={index} className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs">
+                  {theme}
+                </span>
+              ))}
+              {song.themes.length > 4 && (
+                <span className="text-xs text-gray-500">+{song.themes.length - 4} more</span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Notable Recordings Preview */}
+        {song.notableRecordings && song.notableRecordings.length > 0 && (
+          <div className="flex items-center">
+            <span className="font-medium text-gray-700 mr-2">Notable recordings:</span>
+            <span className="text-gray-600 text-sm">
+              {song.notableRecordings.slice(0, 2).map(r => r.artist).join(', ')}
+              {song.notableRecordings.length > 2 && ` +${song.notableRecordings.length - 2} more`}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Click to view more */}
+      <div className="mt-4 pt-3 border-t border-gray-200">
+        <div className="flex justify-between items-center">
+          <span className="text-sm text-gray-500">
+            Added {formatDate(song.createdAt)}
+          </span>
+          <span className="text-sm text-red-600 font-medium hover:text-red-700">
+            Click for full details →
+          </span>
         </div>
-      )}
+      </div>
     </div>
   );
 };
+
+
 
 interface NoResultsFoundProps {
   query: string;
@@ -211,28 +296,29 @@ const NoResultsFound: React.FC<NoResultsFoundProps> = ({ query, onRefreshSearch 
     setResearchError(null);
 
     try {
-      // Import services dynamically to avoid circular dependency issues
-      const { researchSongWithAI } = await import('../../services/gemini');
-      const { createSong } = await import('../../services/firestore');
+      // Import enhanced services dynamically
+      const { enhancedGeminiService } = await import('../../services/enhancedGemini');
+      const { createEnhancedSong } = await import('../../services/firestore');
       
-      // Research the song with AI
-      const aiResult = await researchSongWithAI({ title: query });
-      
-      // Create song in database
-      const songId = await createSong({
-        title: aiResult.title,
-        explanation: aiResult.explanation,
-        sources: aiResult.sources,
-        tags: aiResult.tags
+      // Research the song with enhanced AI
+      const enhancedResult = await enhancedGeminiService.getEnhancedSongInformation({ 
+        title: query.trim() 
       });
       
-      console.log('Song researched and created successfully:', songId);
+      // Create enhanced song in database
+      const songId = await createEnhancedSong(
+        query.trim(),
+        enhancedResult,
+        enhancedResult.metadata
+      );
+      
+      console.log('Enhanced song researched and created successfully:', songId);
       
       // Refresh the search to show the new song
       onRefreshSearch();
       
     } catch (error) {
-      console.error('Failed to research song with AI:', error);
+      console.error('Failed to research song with enhanced AI:', error);
       setResearchError(error instanceof Error ? error.message : 'Failed to research song');
     } finally {
       setIsResearching(false);

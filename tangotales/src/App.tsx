@@ -8,10 +8,7 @@ import NotFoundPage from './pages/NotFoundPage';
 import { validateFirebaseConfig } from './services/firebaseTest';
 import './App.css';
 
-// Development utilities
-if (process.env.NODE_ENV === 'development') {
-  import('./utils/sampleData');
-}
+// Development utilities - enhanced database setup available via DatabaseSetupButton
 
 function App() {
   useEffect(() => {
