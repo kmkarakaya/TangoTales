@@ -1,4 +1,5 @@
 import React from 'react';
+import { SearchBar, SearchResults } from '../components/search';
 import './HomePage.css';
 
 const HomePage: React.FC = () => {
@@ -27,20 +28,16 @@ const HomePage: React.FC = () => {
             </p>
           </div>
           
-          {/* Search Section with Better Contrast */}
-          <div className="max-w-lg mx-auto mb-12">
+          {/* Search Section */}
+          <div className="max-w-2xl mx-auto mb-12">
             <div className="search-container p-6">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search for a tango song..."
-                  className="w-full px-6 py-4 text-lg rounded-lg text-gray-800 border-2 border-gray-200 shadow-lg focus:outline-none focus:ring-4 focus:ring-tango-gold focus:border-tango-gold transition-all"
-                />
-                <button className="absolute right-2 top-2 bg-tango-red text-white px-6 py-2 rounded-lg font-semibold hover:bg-tango-dark-red transition-colors shadow-lg">
-                  Search
-                </button>
-              </div>
+              <SearchBar placeholder="Search for a tango song..." />
             </div>
+          </div>
+          
+          {/* Search Results Section */}
+          <div className="max-w-4xl mx-auto mb-12">
+            <SearchResults />
           </div>
           
           {/* How it Works Section */}

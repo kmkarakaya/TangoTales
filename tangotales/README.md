@@ -2,7 +2,8 @@
 
 A React-based web application for exploring Argentine Tango songs with AI-powered explanations and ratings.
 
-**Tech Stack**: React 18, TypeScript, Tailwind CSS, Firebase (Firestore, Hosting), Gemini AI API
+**Tech Stack**: React 18, TypeScript, Tailwind CSS, Firebase (Firestore, Hosting), Gemini AI API  
+**Development Status**: Step 3 Complete - Search functionality operational! 🎵
 
 ## 🚀 Quick Start
 
@@ -36,6 +37,16 @@ npm install
 npm start
 ```
 
+### 🧪 **Testing Search Functionality**
+
+1. **Start the app**: App runs on http://localhost:3001 (configured port)
+2. **Add sample data**: Open browser console and run:
+   ```javascript
+   window.populateSampleData()
+   ```
+3. **Test search**: Try searching for "La Cumparsita", "Por Una Cabeza", etc.
+4. **Explore features**: Use "Show Popular Songs" button and test mobile responsiveness
+
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
 ## Available Scripts
@@ -45,7 +56,7 @@ In the project directory, you can run:
 ### `npm start`
 
 Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+Open [http://localhost:3001](http://localhost:3001) to view it in the browser.
 
 The page will reload if you make edits.\
 You will also see any lint errors in the console.

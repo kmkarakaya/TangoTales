@@ -12,26 +12,29 @@ const ErrorMessage: React.FC<ErrorMessageProps> = ({
   className = '' 
 }) => {
   return (
-    <div className={`bg-red-50 border border-red-200 rounded-lg p-4 ${className}`}>
-      <div className="flex items-center">
-        <div className="text-red-500 mr-3">
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        </div>
-        <div className="flex-1">
-          <h3 className="text-red-800 font-medium">Error</h3>
-          <p className="text-red-700 mt-1">{message}</p>
-        </div>
-        {onRetry && (
-          <button
-            onClick={onRetry}
-            className="ml-3 bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 transition-colors"
-          >
-            Retry
-          </button>
-        )}
+    <div className={`content-overlay p-8 text-center ${className}`}>
+      <div className="text-red-400 text-sm mb-4">
+        <svg className="w-3 h-3 mx-auto" style={{width: '12px', height: '12px'}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
       </div>
+      
+      <h3 className="text-2xl font-bold mb-4 text-shadow-strong force-yellow-text">
+        Something Went Wrong
+      </h3>
+      
+      <p className="mb-6 max-w-md mx-auto text-shadow-medium force-white-text">
+        {message}
+      </p>
+      
+      {onRetry && (
+        <button 
+          onClick={onRetry}
+          className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold shadow-lg transition-all duration-200 transform hover:scale-105"
+        >
+          Try Again
+        </button>
+      )}
     </div>
   );
 };

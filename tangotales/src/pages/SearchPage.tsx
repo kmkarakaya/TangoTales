@@ -19,8 +19,8 @@ const SearchPage: React.FC = () => {
             />
           </div>
           
-          <div className="text-center text-gray-500">
-            <p>Enter a song name to search our database or discover new songs with AI</p>
+          <div className="text-center">
+            <p className="force-white-text">Enter a song name to search our database or discover new songs with AI</p>
           </div>
         </div>
       </main>

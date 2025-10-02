@@ -9,6 +9,7 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  color: white !important;
 }
 
 code {
@@ -30,5 +31,54 @@ code {
   .bg-glass-light {
     background: rgba(255, 255, 255, 0.9);
     backdrop-filter: blur(10px);
+  }
+  
+  /* Content overlay for readable text over background images */
+  .content-overlay {
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(3px);
+    border-radius: 1rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  }
+  
+  /* Strong text shadows for readability */
+  .text-shadow-strong {
+    text-shadow: 
+      4px 4px 8px rgba(0, 0, 0, 1),
+      2px 2px 4px rgba(0, 0, 0, 0.95),
+      1px 1px 2px rgba(0, 0, 0, 0.9),
+      0px 0px 12px rgba(0, 0, 0, 0.8),
+      0px 0px 24px rgba(0, 0, 0, 0.6),
+      0px 0px 36px rgba(0, 0, 0, 0.4);
+  }
+
+  .text-shadow-medium {
+    text-shadow: 
+      3px 3px 6px rgba(0, 0, 0, 1),
+      2px 2px 4px rgba(0, 0, 0, 0.9),
+      1px 1px 2px rgba(0, 0, 0, 0.8),
+      0px 0px 10px rgba(0, 0, 0, 0.7),
+      0px 0px 20px rgba(0, 0, 0, 0.5),
+      0px 0px 30px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Force white text color */
+  .force-white-text {
+    color: #FFFFFF !important;
+  }
+
+  /* Force yellow text color */
+  .force-yellow-text {
+    color: #FFD700 !important;
+  }
+
+  /* Force black text color */
+  .force-black-text {
+    color: #000000 !important;
+  }
+
+  /* Global white text for all elements */
+  * {
+    color: white !important;
   }
 }

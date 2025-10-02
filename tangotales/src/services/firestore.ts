@@ -12,8 +12,7 @@ import {
   getDocs, 
   addDoc,
   Timestamp,
-  DocumentData,
-  QuerySnapshot
+  DocumentData
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { Song, Rating } from '../types/song';
