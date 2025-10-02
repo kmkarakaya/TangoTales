@@ -55,61 +55,30 @@ export interface EnhancedSongResult {
 }
 
 /**
- * Enhanced system prompt for comprehensive tango song information
+ * System prompt optimized for multi-turn conversations
  */
-const ENHANCED_SYSTEM_PROMPT = `
-You are an expert tango musicologist and historian specializing in Argentine tango music from 1880 to present. Your role is to provide comprehensive, accurate information about tango songs with deep cultural and historical context.
+const ENHANCED_SYSTEM_PROMPT = `You are an expert tango musicologist and historian specializing in Argentine tango music from 1880 to present.
 
-You must respond ONLY with a valid JSON object following this exact structure:
-
-{
-  "composer": "Full name of the composer",
-  "lyricist": "Full name of the lyricist (if different from composer, otherwise null)",
-  "yearComposed": number or null,
-  "period": "Pre-Golden Age" | "Golden Age" | "Post-Golden Age" | "Contemporary",
-  "musicalForm": "Tango" | "Vals" | "Milonga" | "Candombe" | "Other",
-  "themes": ["array", "of", "main", "themes"],
-  "culturalSignificance": "2-3 sentences on the song's place in tango culture",
-  "historicalContext": "Historical backdrop when the song was written",
-  "musicalCharacteristics": ["array", "of", "musical", "features"],
-  "danceStyle": ["array", "of", "dance", "characteristics"],
-  "notableRecordings": [
-    {
-      "artist": "Artist name",
-      "orchestra": "Orchestra name or null",
-      "year": number or null,
-      "significance": "Brief description of significance"
-    }
-  ],
-  "notablePerformers": [
-    {
-      "name": "Performer name",
-      "role": "Singer" | "Orchestra Leader" | "Musician",
-      "significance": "Brief description"
-    }
-  ],
-  "recommendedForDancing": boolean,
-  "danceRecommendations": "Brief guidance for dancers or null",
-  "story": "The narrative told by the lyrics or null",
-  "inspiration": "Background story of creation or null",
-  "explanation": "Comprehensive 2-3 paragraph summary combining all aspects"
-}
+RESPONSE FORMAT RULES:
+- Respond ONLY with valid JSON objects - no explanatory text, no markdown code blocks
+- Use null for genuinely unknown information - never guess or fabricate data  
+- Keep JSON responses focused and concise
+- Ensure all string values are properly escaped for JSON parsing
+- Use exact field names as requested in each turn
 
 PERIOD DEFINITIONS:
-- Pre-Golden Age: 1880-1916
-- Golden Age: 1916-1955  
-- Post-Golden Age: 1955-1980
-- Contemporary: 1980-present
+- Pre-Golden Age: 1880-1916 (Early development period)
+- Golden Age: 1916-1955 (Peak popularity and standardization) 
+- Post-Golden Age: 1955-1980 (Evolution and diversification)
+- Contemporary: 1980-present (Modern interpretations and nuevo tango)
 
 QUALITY STANDARDS:
-- Use null for unknown/unreliable information
-- Distinguish documented facts from interpretations
-- Provide cultural context that enhances understanding
-- Balance academic accuracy with accessibility
-- Ensure all string values are properly escaped for JSON
+- Distinguish documented historical facts from interpretations
+- Provide cultural context that enhances understanding for tango enthusiasts
+- Balance academic accuracy with accessibility for dancers and music lovers
+- When uncertain, use null rather than speculative information
 
-Return ONLY the JSON object, no additional text or formatting.
-`;
+You will receive focused requests for specific information categories. Respond to each request individually with the exact JSON structure requested.`;
 
 /**
  * Chat session manager for multi-turn conversations
@@ -167,91 +136,192 @@ class SongInformationService {
   }
   
   private async gatherInformationWithChat(chat: any, songTitle: string): Promise<EnhancedSongResult & { metadata: SongMetadata }> {
-    let retryCount = 0;
-    console.log(`📡 GEMINI DEBUG - Starting chat interaction for "${songTitle}"`);
+    console.log(`📡 GEMINI DEBUG - Starting multi-turn conversation for "${songTitle}"`);
     
+    const songData: Partial<EnhancedSongResult> = {};
+    let successfulTurns = 0;
+    let failedTurns = 0;
+    
+    // Turn 1: Basic Song Information
     try {
-      // Step 1: Initial comprehensive request
-      console.log('📤 GEMINI DEBUG - Sending initial prompt');
-      const initialPrompt = `${ENHANCED_SYSTEM_PROMPT}\n\nProvide comprehensive information about the tango song: "${songTitle}"`;
-      console.log('- Prompt length:', initialPrompt.length);
-      console.log('- Prompt preview:', initialPrompt.substring(0, 200) + '...');
+      console.log('📤 Turn 1: Basic song information');
+      const basicPrompt = `For the tango song "${songTitle}", provide ONLY this JSON structure:
+{
+  "composer": "composer full name or Unknown",
+  "lyricist": "lyricist name or null", 
+  "yearComposed": year_number_or_null,
+  "period": "Pre-Golden Age" | "Golden Age" | "Post-Golden Age" | "Contemporary",
+  "musicalForm": "Tango" | "Vals" | "Milonga"
+}
+
+Periods: Pre-Golden Age (1880-1916), Golden Age (1916-1955), Post-Golden Age (1955-1980), Contemporary (1980+)`;
       
-      console.log('⏳ GEMINI DEBUG - Waiting for API response...');
-      const response = await chat.sendMessage({ message: initialPrompt });
+      const basicResponse = await chat.sendMessage({ message: basicPrompt });
+      console.log('📥 Turn 1 response:', basicResponse.text?.length || 0, 'chars');
       
-      console.log('📥 GEMINI DEBUG - Received response');
-      console.log('- Response type:', typeof response.text);
-      console.log('- Response length:', response.text?.length || 0);
-      console.log('- Response preview:', response.text?.substring(0, 300) + '...' || 'EMPTY');
-      
-      let songData = this.parseAndValidateResponse(response.text);
-      
-      // Step 2: Targeted requests for missing required fields
-      const missingRequired = this.validateRequiredFields(songData);
-      if (missingRequired.length > 0) {
-        retryCount++;
-        const followUpPrompt = `
-        I notice these required fields are missing from your previous response about "${songTitle}":
-        ${missingRequired.join(', ')}
-        
-        Please provide ONLY these specific fields in JSON format:
-        {
-          ${missingRequired.map(field => `"${field}": null`).join(',\n          ')}
-        }
-        `;
-        
-        const followUpResponse = await chat.sendMessage({ message: followUpPrompt });
-        const additionalData = this.parseJSONWithRepair(followUpResponse.text);
-        songData = { ...songData, ...additionalData };
-      }
-      
-      // Step 3: Optional enhancement for incomplete data (only if few missing)
-      const missingOptional = this.identifyMissingOptionalFields(songData);
-      if (missingOptional.length > 0 && missingOptional.length <= 3) {
-        const enhancementPrompt = `
-        For "${songTitle}", can you provide additional details for these fields if available:
-        ${missingOptional.join(', ')}
-        
-        Return JSON with only the available information. Use null for unknown fields.
-        `;
-        
-        try {
-          const enhancementResponse = await chat.sendMessage({ message: enhancementPrompt });
-          const enhancementData = this.parseJSONWithRepair(enhancementResponse.text);
-          songData = { ...songData, ...enhancementData };
-        } catch (error) {
-          // Don't fail the process for optional enhancements
-          console.warn('Optional field enhancement failed:', error);
-        }
-      }
-      
-      // Create metadata
-      const metadata: SongMetadata = {
-        aiResponseQuality: this.determineResponseQuality(songData),
-        needsManualReview: missingRequired.length > 0,
-        lastAIUpdate: new Date(),
-        retryCount,
-        errorReason: missingRequired.length > 0 ? 'MISSING_REQUIRED_FIELDS' : undefined
-      };
-      
-      return { ...this.sanitizeResponse(songData), metadata };
-      
+      const basicData = this.parseJSONWithRepair(basicResponse.text);
+      Object.assign(songData, basicData);
+      successfulTurns++;
+      console.log('✅ Turn 1 successful:', Object.keys(basicData));
     } catch (error) {
-      console.error(`Enhanced song information failed for ${songTitle}:`, error);
-      
-      // Return fallback data with error metadata
-      const fallbackData = this.createFallbackData(songTitle);
-      const metadata: SongMetadata = {
-        aiResponseQuality: 'failed',
-        needsManualReview: true,
-        lastAIUpdate: new Date(),
-        retryCount,
-        errorReason: error instanceof Error ? error.message : 'UNKNOWN_ERROR'
-      };
-      
-      return { ...fallbackData, metadata };
+      console.error('❌ Turn 1 failed:', error);
+      failedTurns++;
+      // Add fallback basic data
+      Object.assign(songData, {
+        composer: 'Unknown',
+        period: 'Golden Age',
+        musicalForm: 'Tango'
+      });
     }
+    
+    // Turn 2: Cultural & Thematic Information
+    try {
+      console.log('� Turn 2: Cultural and thematic information');
+      const culturalPrompt = `For "${songTitle}", provide ONLY this JSON:
+{
+  "themes": ["theme1", "theme2", "theme3"],
+  "culturalSignificance": "brief description of cultural importance or null",
+  "historicalContext": "historical backdrop when written or null"
+}
+
+Keep descriptions concise (1-2 sentences each).`;
+      
+      const culturalResponse = await chat.sendMessage({ message: culturalPrompt });
+      console.log('📥 Turn 2 response:', culturalResponse.text?.length || 0, 'chars');
+      
+      const culturalData = this.parseJSONWithRepair(culturalResponse.text);
+      Object.assign(songData, culturalData);
+      successfulTurns++;
+      console.log('✅ Turn 2 successful:', Object.keys(culturalData));
+    } catch (error) {
+      console.error('❌ Turn 2 failed:', error);
+      failedTurns++;
+      // Add fallback cultural data
+      Object.assign(songData, {
+        themes: ['tango', 'traditional'],
+        culturalSignificance: 'This is a traditional tango song.',
+        historicalContext: 'Part of the Argentine tango repertoire.'
+      });
+    }
+    
+    // Turn 3: Musical & Dance Characteristics
+    try {
+      console.log('📤 Turn 3: Musical and dance characteristics');
+      const musicPrompt = `For "${songTitle}", provide ONLY this JSON:
+{
+  "musicalCharacteristics": ["characteristic1", "characteristic2"],
+  "danceStyle": ["dance_characteristic1", "dance_characteristic2"],
+  "recommendedForDancing": true_or_false,
+  "danceRecommendations": "brief dance guidance or null"
+}`;
+      
+      const musicResponse = await chat.sendMessage({ message: musicPrompt });
+      console.log('📥 Turn 3 response:', musicResponse.text?.length || 0, 'chars');
+      
+      const musicData = this.parseJSONWithRepair(musicResponse.text);
+      Object.assign(songData, musicData);
+      successfulTurns++;
+      console.log('✅ Turn 3 successful:', Object.keys(musicData));
+    } catch (error) {
+      console.error('❌ Turn 3 failed:', error);
+      failedTurns++;
+      // Add fallback musical data
+      Object.assign(songData, {
+        musicalCharacteristics: ['traditional tango rhythm'],
+        danceStyle: ['classic tango'],
+        recommendedForDancing: true,
+        danceRecommendations: 'Suitable for social dancing'
+      });
+    }
+    
+    // Turn 4: Notable Recordings & Performers
+    try {
+      console.log('📤 Turn 4: Notable recordings and performers');
+      const performersPrompt = `For "${songTitle}", provide ONLY this JSON:
+{
+  "notableRecordings": [
+    {
+      "artist": "Artist Name",
+      "orchestra": "Orchestra name or null",
+      "year": year_number_or_null,
+      "significance": "brief description"
+    }
+  ],
+  "notablePerformers": [
+    {
+      "name": "Performer Name", 
+      "role": "Singer" | "Orchestra Leader" | "Musician",
+      "significance": "brief description"
+    }
+  ]
+}
+
+Use empty arrays [] if no notable recordings/performers are known.`;
+      
+      const performersResponse = await chat.sendMessage({ message: performersPrompt });
+      console.log('📥 Turn 4 response:', performersResponse.text?.length || 0, 'chars');
+      
+      const performersData = this.parseJSONWithRepair(performersResponse.text);
+      Object.assign(songData, performersData);
+      successfulTurns++;
+      console.log('✅ Turn 4 successful:', Object.keys(performersData));
+    } catch (error) {
+      console.error('❌ Turn 4 failed:', error);
+      failedTurns++;
+      // Add fallback performers data
+      Object.assign(songData, {
+        notableRecordings: [],
+        notablePerformers: []
+      });
+    }
+    
+    // Turn 5: Story & Comprehensive Summary
+    try {
+      console.log('📤 Turn 5: Story and comprehensive summary');
+      const summaryPrompt = `For "${songTitle}", provide ONLY this JSON:
+{
+  "story": "narrative told by the lyrics or null",
+  "inspiration": "background story of song creation or null",
+  "explanation": "comprehensive 2-3 paragraph summary combining historical context, cultural significance, and musical importance"
+}
+
+The explanation should be informative and engaging, suitable for tango enthusiasts.`;
+      
+      const summaryResponse = await chat.sendMessage({ message: summaryPrompt });
+      console.log('📥 Turn 5 response:', summaryResponse.text?.length || 0, 'chars');
+      
+      const summaryData = this.parseJSONWithRepair(summaryResponse.text);
+      Object.assign(songData, summaryData);
+      successfulTurns++;
+      console.log('✅ Turn 5 successful:', Object.keys(summaryData));
+    } catch (error) {
+      console.error('❌ Turn 5 failed:', error);
+      failedTurns++;
+      // Add fallback summary data
+      Object.assign(songData, {
+        story: null,
+        inspiration: null,
+        explanation: `"${songTitle}" is a tango song that forms part of the rich Argentine musical tradition. While specific details about its creation and history may be limited, it represents the enduring legacy of tango music that continues to captivate dancers and music lovers worldwide.`
+      });
+    }
+    
+    console.log(`📊 Multi-turn results: ${successfulTurns} successful, ${failedTurns} failed out of 5 turns`);
+    
+    // Create metadata based on success rate
+    const successRate = successfulTurns / (successfulTurns + failedTurns);
+    const metadata: SongMetadata = {
+      aiResponseQuality: successRate >= 0.8 ? 'excellent' : 
+                        successRate >= 0.6 ? 'good' : 
+                        successRate >= 0.4 ? 'partial' : 'failed',
+      needsManualReview: successRate < 0.6,
+      lastAIUpdate: new Date(),
+      retryCount: failedTurns,
+      errorReason: failedTurns > 0 ? `${failedTurns}_OF_5_TURNS_FAILED` : undefined
+    };
+    
+    console.log(`📈 Final quality assessment: ${metadata.aiResponseQuality} (${Math.round(successRate * 100)}% success rate)`);
+    
+    return { ...this.sanitizeResponse(songData), metadata };
   }
   
   private parseAndValidateResponse(responseText: string): Partial<EnhancedSongResult> {

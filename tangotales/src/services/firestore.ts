@@ -737,41 +737,62 @@ export const updateSongWithEnhancedData = async (
       }
     });
     
-    // Filter out undefined values and invalid data types
-    const cleanUpdateData = Object.fromEntries(
-      Object.entries(updateData).filter(([key, value]) => {
+    // Deep clean function to remove undefined values recursively
+    const deepCleanObject = (obj: any): any => {
+      if (obj === null || obj === undefined) {
+        return null; // Return null instead of undefined for Firestore compatibility
+      }
+      
+      if (Array.isArray(obj)) {
+        return obj.map(item => deepCleanObject(item)).filter(item => item !== null && item !== undefined);
+      }
+      
+      if (typeof obj === 'object' && obj.constructor === Date) {
+        return Timestamp.fromDate(obj);
+      }
+      
+      if (typeof obj === 'object') {
+        const cleaned: any = {};
+        for (const [key, value] of Object.entries(obj)) {
+          if (value !== undefined) {
+            const cleanedValue = deepCleanObject(value);
+            if (cleanedValue !== undefined) {
+              cleaned[key] = cleanedValue;
+            } else {
+              console.log(`🧹 FIREBASE DEBUG - Filtering out undefined nested field: ${key}`);
+            }
+          } else {
+            console.log(`🧹 FIREBASE DEBUG - Filtering out undefined field: ${key}`);
+          }
+        }
+        return Object.keys(cleaned).length > 0 ? cleaned : undefined;
+      }
+      
+      return obj;
+    };
+    
+    // Apply deep cleaning to the entire update object
+    const cleanUpdateData = deepCleanObject(updateData);
+    
+    // Final safety check - remove any top-level undefined values that might remain
+    const finalCleanData = Object.fromEntries(
+      Object.entries(cleanUpdateData || {}).filter(([key, value]) => {
         if (value === undefined) {
-          console.log(`🧹 FIREBASE DEBUG - Filtering out undefined field: ${key}`);
+          console.log(`🧹 FIREBASE DEBUG - Final filter removing undefined field: ${key}`);
           return false;
-        }
-        if (typeof value === 'function') {
-          console.log(`🧹 FIREBASE DEBUG - Filtering out function field: ${key}`);
-          return false;
-        }
-        if (value && typeof value === 'object' && value.constructor === Date) {
-          console.log(`🧹 FIREBASE DEBUG - Converting Date object field: ${key}`);
-          // Convert Date to Firestore Timestamp
-          return true; // We'll handle the conversion below
         }
         return true;
       })
     );
     
-    // Convert any Date objects to Firestore Timestamps
-    Object.entries(cleanUpdateData).forEach(([key, value]) => {
-      if (value && typeof value === 'object' && value.constructor === Date) {
-        cleanUpdateData[key] = Timestamp.fromDate(value as Date);
-      }
-    });
-    
     console.log('✅ FIREBASE DEBUG - Clean update data prepared:', {
       originalFields: Object.keys(updateData).length,
-      cleanedFields: Object.keys(cleanUpdateData).length,
-      removedCount: Object.keys(updateData).length - Object.keys(cleanUpdateData).length
+      cleanedFields: Object.keys(finalCleanData).length,
+      removedCount: Object.keys(updateData).length - Object.keys(finalCleanData).length
     });
     
     // Update the document in Firestore
-    await updateDoc(doc(db, 'songs', songId), cleanUpdateData);
+    await updateDoc(doc(db, 'songs', songId), finalCleanData as any);
     
     console.log(`✅ Updated song with enhanced data: ${songId}`);
     

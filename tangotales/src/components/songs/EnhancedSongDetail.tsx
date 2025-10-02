@@ -4,12 +4,16 @@ import { Song, Recording, Performer } from '../../types/song';
 interface EnhancedSongDetailProps {
   song: Song;
   onClose?: () => void;
+  onEnhance?: () => void;
+  isEnhancing?: boolean;
   className?: string;
 }
 
 export const EnhancedSongDetail: React.FC<EnhancedSongDetailProps> = ({
   song,
   onClose,
+  onEnhance,
+  isEnhancing = false,
   className = ""
 }) => {
   const renderRecording = (recording: Recording, index: number) => (
@@ -102,14 +106,29 @@ export const EnhancedSongDetail: React.FC<EnhancedSongDetailProps> = ({
               </p>
             )}
           </div>
-          {onClose && (
-            <button 
-              onClick={onClose}
-              className="text-white/60 hover:text-white/90 transition-colors ml-4"
-            >
-              ✕
-            </button>
-          )}
+          <div className="flex items-center space-x-2 ml-4">
+            {onEnhance && (
+              <button 
+                onClick={onEnhance}
+                disabled={isEnhancing}
+                className={`px-3 py-1 rounded-lg text-sm font-medium transition-all ${
+                  isEnhancing
+                    ? 'bg-gray-500/20 text-gray-400 cursor-not-allowed'
+                    : 'bg-blue-600 hover:bg-blue-700 text-white hover:scale-105'
+                }`}
+              >
+                {isEnhancing ? '🤖 Enhancing...' : '🤖 Enhance with AI'}
+              </button>
+            )}
+            {onClose && (
+              <button 
+                onClick={onClose}
+                className="text-white/60 hover:text-white/90 transition-colors"
+              >
+                ✕
+              </button>
+            )}
+          </div>
         </div>
         
         {/* Basic Info Tags */}

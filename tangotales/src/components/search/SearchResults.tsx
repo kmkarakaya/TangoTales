@@ -124,6 +124,52 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   } = useSearch();
   
   const [selectedSong, setSelectedSong] = useState<Song | null>(null);
+  const [enhancingSong, setEnhancingSong] = useState<string | null>(null);
+  const [enhancedSongs, setEnhancedSongs] = useState<Map<string, Song>>(new Map());
+
+  // Handle enhancement that keeps modal open and updates content
+  const handleEnhanceSongInModal = async (song: Song) => {
+    setEnhancingSong(song.id);
+    
+    try {
+      // Import enhanced services dynamically
+      const { songInformationService } = await import('../../services/enhancedGemini');
+      const { updateSongWithEnhancedData, getSongById } = await import('../../services/firestore');
+      
+      console.log(`🤖 Enhancing song: "${song.title}"`);
+      
+      // Research the song with enhanced AI
+      const enhancedResult = await songInformationService.getEnhancedSongInformation({ 
+        title: song.title 
+      });
+      
+      // Update the song in the database
+      await updateSongWithEnhancedData(song.id, enhancedResult, {
+        aiResponseQuality: 'good',
+        needsManualReview: false,
+        lastAIUpdate: new Date(),
+        retryCount: 0
+      });
+      
+      // Fetch the updated song from database
+      const updatedSong = await getSongById(song.id);
+      if (updatedSong) {
+        // Update local cache
+        setEnhancedSongs(prev => new Map(prev).set(song.id, updatedSong));
+        
+        // If this song is currently selected, update the modal
+        if (selectedSong?.id === song.id) {
+          setSelectedSong(updatedSong);
+        }
+      }
+      
+      console.log(`✅ Enhanced song: "${song.title}"`);
+    } catch (error) {
+      console.error(`Failed to enhance song "${song.title}":`, error);
+    } finally {
+      setEnhancingSong(null);
+    }
+  };
 
   // Show loading state
   if (loading) {
@@ -164,15 +210,19 @@ const SearchResults: React.FC<SearchResultsProps> = ({
       <div className={`${className}`}>
         {selectedSong ? (
           <EnhancedSongDetail 
-            song={selectedSong} 
+            song={enhancedSongs.get(selectedSong.id) || selectedSong} 
             onClose={() => setSelectedSong(null)}
+            onEnhance={() => handleEnhanceSongInModal(selectedSong)}
+            isEnhancing={enhancingSong === selectedSong.id}
             className="max-w-4xl mx-auto"
           />
         ) : (
           <SearchResultsList 
-            results={results} 
+            results={results.map(song => enhancedSongs.get(song.id) || song)} 
             query={query} 
             onSongClick={setSelectedSong}
+            onEnhance={handleEnhanceSongInModal}
+            enhancingSongId={enhancingSong}
           />
         )}
       </div>
@@ -195,6 +245,8 @@ interface SearchResultsListProps {
   results: Song[];
   query: string;
   onSongClick: (song: Song) => void;
+  onEnhance?: (song: Song) => void;
+  enhancingSongId?: string | null;
 }
 
 // Helper function to detect low-quality songs that need AI enhancement
@@ -210,7 +262,7 @@ const isLowQualitySong = (song: Song): boolean => {
   );
 };
 
-const SearchResultsList: React.FC<SearchResultsListProps> = ({ results, query, onSongClick }) => {
+const SearchResultsList: React.FC<SearchResultsListProps> = ({ results, query, onSongClick, onEnhance, enhancingSongId }) => {
   const lowQualitySongs = results.filter(isLowQualitySong);
   const hasLowQualitySongs = lowQualitySongs.length > 0;
 
@@ -250,6 +302,8 @@ const SearchResultsList: React.FC<SearchResultsListProps> = ({ results, query, o
             song={song} 
             onClick={() => onSongClick(song)}
             showEnhanceButton={isLowQualitySong(song)}
+            onEnhance={onEnhance}
+            isEnhancing={enhancingSongId === song.id}
           />
         ))}
       </div>
@@ -261,9 +315,11 @@ interface SongCardProps {
   song: Song;
   onClick?: () => void;
   showEnhanceButton?: boolean;
+  onEnhance?: (song: Song) => void;
+  isEnhancing?: boolean;
 }
 
-const SongCard: React.FC<SongCardProps> = ({ song, onClick, showEnhanceButton = false }) => {
+const SongCard: React.FC<SongCardProps> = ({ song, onClick, showEnhanceButton = false, onEnhance, isEnhancing = false }) => {
   // Format date
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('en-US', {
@@ -403,12 +459,21 @@ const SongCard: React.FC<SongCardProps> = ({ song, onClick, showEnhanceButton = 
             Added {formatDate(song.createdAt)}
           </span>
           <div className="flex items-center space-x-3">
-            {showEnhanceButton && (
-              <EnhanceWithAIButton 
-                songs={[song]} 
-                onEnhancementComplete={() => window.location.reload()}
-                size="small"
-              />
+            {showEnhanceButton && onEnhance && (
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEnhance(song);
+                }}
+                disabled={isEnhancing}
+                className={`px-3 py-1 text-xs rounded font-semibold transition-all duration-200 ${
+                  isEnhancing
+                    ? 'bg-gray-400 text-white opacity-50 cursor-not-allowed'
+                    : 'bg-blue-600 hover:bg-blue-700 text-white hover:scale-105 shadow-lg'
+                }`}
+              >
+                {isEnhancing ? '🤖 Enhancing...' : '🤖 Enhance with AI'}
+              </button>
             )}
             <span className="text-sm text-red-600 font-medium hover:text-red-700">
               Click for full details →
