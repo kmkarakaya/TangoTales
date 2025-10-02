@@ -624,7 +624,13 @@ export const createSongWithAI = async (songTitle: string): Promise<Song | null> 
     } catch (aiError) {
       console.error('AI generation failed, trying sample data:', aiError);
       
-      // Try to use sample song data as fallback
+      // If this is a "not a tango song" validation error, don't create any entry
+      if (aiError instanceof Error && aiError.message.includes('NOT_A_TANGO_SONG')) {
+        console.log('🚫 FIRESTORE DEBUG - Validation failed: not a tango song, refusing to create database entry');
+        throw aiError; // Re-throw to prevent any database entry creation
+      }
+      
+      // Try to use sample song data as fallback for other errors
       const sampleData = getSampleSongByTitle(songTitle);
       
       if (sampleData) {
@@ -692,6 +698,13 @@ export const createSongWithAI = async (songTitle: string): Promise<Song | null> 
     
   } catch (error) {
     console.error('Failed to create song with AI:', error);
+    
+    // If it's a validation error, preserve the original message
+    if (error instanceof Error && error.message.includes('NOT_A_TANGO_SONG')) {
+      throw error;
+    }
+    
+    // For other errors, use generic message
     throw new Error(`Failed to research song: ${songTitle}`);
   }
 };

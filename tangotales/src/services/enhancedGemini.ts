@@ -147,7 +147,9 @@ class SongInformationService {
     // Turn 0: Title Correction & Validation
     try {
       console.log('📤 Turn 0: Title correction and validation');
-      const titleCorrectionPrompt = `Given the user input "${songTitle}", identify the correct tango song title. Respond ONLY with this JSON:
+      const titleCorrectionPrompt = `TANGO VALIDATION TASK: Analyze if "${songTitle}" is a legitimate tango song title from the Argentine tango repertoire (1880-present).
+
+Respond ONLY with this JSON:
 {
   "correctedTitle": "exact correct title of the tango song or null if not a known tango",
   "confidence": "high" | "medium" | "low" | "not_found",
@@ -155,24 +157,36 @@ class SongInformationService {
   "isKnownTango": true | false
 }
 
-IMPORTANT: 
-- If this appears to be a misspelling of a famous tango, correct it (e.g., "merseditas" → "Merceditas")
-- Only return known, documented tango songs from Argentine tango repertoire
-- Set isKnownTango to false if this doesn't match any real tango song
-- Be strict: better to return null than fabricate titles`;
+VALIDATION CRITERIA:
+- ONLY accept titles that are documented Argentine tango compositions
+- Check against famous tangos: La Cumparsita, El Choclo, Adios Muchachos, Por Una Cabeza, etc.
+- If it's a misspelling of a known tango, correct it (e.g., "merseditas" → "Merceditas", "bahia blanka" → "Bahía Blanca")
+- REJECT terms that are clearly not tango songs (random words, other music genres, non-Spanish titles unless famous)
+- REJECT general words like colors, animals, random phrases in any language
+- Be extremely strict: when in doubt, set isKnownTango to false
+- Only set isKnownTango to true for confirmed Argentine tango compositions
+
+EXAMPLES TO REJECT: "yellow flower", "sarı çiçek", "hello world", "rock music", "jazz standard"`;
       
       const titleResponse = await chat.sendMessage({ message: titleCorrectionPrompt });
       console.log('📥 Turn 0 response:', titleResponse.text?.length || 0, 'chars');
       
       const titleData = this.parseJSONWithRepair(titleResponse.text) as any;
       
+      // Check if this is actually a tango song
+      if (!titleData.isKnownTango) {
+        console.log(`❌ VALIDATION FAILED: "${songTitle}" is not recognized as a tango song`);
+        console.log('- AI confidence:', titleData.confidence);
+        console.log('- Suggested alternatives:', titleData.alternativeSpellings);
+        
+        // Throw specific error for non-tango songs
+        throw new Error(`NOT_A_TANGO_SONG: "${songTitle}" does not appear to be a valid tango song title. Please search for actual tango compositions from the Argentine tango repertoire.`);
+      }
+      
       // Update the title if correction was found
       if (titleData.correctedTitle && titleData.isKnownTango) {
         correctedTitle = titleData.correctedTitle;
         console.log(`🔧 Title corrected: "${songTitle}" → "${correctedTitle}"`);
-      } else if (!titleData.isKnownTango) {
-        console.log(`⚠️ Warning: "${songTitle}" is not recognized as a known tango song`);
-        // We'll proceed but mark this in metadata
       }
       
       // Add title correction info to song data
@@ -186,8 +200,15 @@ IMPORTANT:
       console.log('✅ Turn 0 successful:', { originalTitle: songTitle, correctedTitle, confidence: titleData.confidence || 'unknown' });
     } catch (error) {
       console.error('❌ Turn 0 failed:', error);
+      
+      // If this is a "not a tango song" error, re-throw it to stop processing
+      if (error instanceof Error && error.message.includes('NOT_A_TANGO_SONG')) {
+        console.log('🚫 Stopping AI processing - not a valid tango song');
+        throw error; // Re-throw to stop the entire process
+      }
+      
       failedTurns++;
-      // Use original title if correction fails
+      // Use original title if correction fails (for other types of errors)
       correctedTitle = songTitle;
       Object.assign(songData, {
         originalUserInput: songTitle,

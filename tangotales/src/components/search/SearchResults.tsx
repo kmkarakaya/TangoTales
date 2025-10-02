@@ -532,7 +532,16 @@ const NoResultsFound: React.FC<NoResultsFoundProps> = ({ query, onRefreshSearch,
       
     } catch (error) {
       console.error('Failed to research song with AI:', error);
-      setResearchError(error instanceof Error ? error.message : 'Failed to research song');
+      
+      const errorMessage = error instanceof Error ? error.message : 'Failed to research song';
+      
+      // Check if this is a "not a tango song" error
+      if (errorMessage.includes('NOT_A_TANGO_SONG')) {
+        // Provide a user-friendly message for non-tango songs
+        setResearchError(`"${query}" does not appear to be a tango song. Please search for actual tango compositions from the Argentine tango repertoire (1880-present).`);
+      } else {
+        setResearchError(errorMessage);
+      }
     } finally {
       setIsResearching(false);
     }
