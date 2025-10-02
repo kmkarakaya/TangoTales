@@ -38,7 +38,7 @@ A modern, responsive web application that helps users discover and explore the m
 
 **🎉 LIVE APP**: [https://tangotales-app.web.app](https://tangotales-app.web.app)
 
-**Development Status**: Desktop-first landing page complete with clean 3-column layout! 🎨 Latest: Comprehensive cleanup - removed all old glassmorphism code, now 100% Tailwind CSS.
+**Development Status**: ✅ **AI Research Feature Complete!** Users can now research unknown tango songs with Gemini AI and see results immediately. Full search functionality, Firebase integration, and automated deployment pipeline active.
 
 ```bash
 # Clone and navigate to the React app
@@ -108,7 +108,18 @@ TangoTales features a professional desktop-first interface with emphasis on clar
 - **Keyboard Navigation**: Full Enter key support and clear button functionality
 - **Result Caching**: Avoid redundant database calls for better performance
 - **Popular Songs**: Discover trending songs with one-click access
-- **No Results Handling**: Graceful "not found" states with future AI research preview
+- **AI Research**: When songs aren't found, users can research them with Gemini AI
+
+### 🤖 **AI-Powered Research** ✅ **NEW!**
+
+- **Gemini AI Integration**: Research unknown tango songs using Google's Gemini 2.0 Flash model
+- **Comprehensive Analysis**: Get detailed information about song meaning, history, and cultural context
+- **Auto-Save to Database**: Researched songs are automatically saved for future searches
+- **Instant Results**: See AI-researched songs appear immediately at the top of search results
+- **Rich Content**: Includes title translation, historical context, composer info, and source references
+- **Smart Ordering**: Newly researched songs appear first, maintaining search context
+- **Error Handling**: Graceful fallbacks with retry options for failed research attempts
+- **Secure Configuration**: Environment variables for API keys with GitHub Secrets integration
 
 ### 🎭 **Song Discovery** ✅
 
@@ -139,10 +150,11 @@ TangoTales features a professional desktop-first interface with emphasis on clar
 
 - **Frontend**: React 18 + TypeScript + Tailwind CSS
 - **Database**: Firebase Firestore (Client SDK only)
-- **AI Integration**: Google Gemini AI API
-- **Hosting**: Firebase Hosting
+- **AI Integration**: Google Gemini 2.0 Flash API (@google/genai v1.21.0)
+- **Hosting**: Firebase Hosting with GitHub Actions CI/CD
 - **Routing**: React Router v6
 - **State Management**: React Context API
+- **Testing**: Playwright MCP for end-to-end validation
 
 ## � Firebase Integration
 

@@ -1,4 +1,5 @@
-# 🎵 TangoTales
+# 🎵**Tech Stack**: React 18, TypeScript, Tailwind CSS, Firebase (Firestore, Hosting), Gemini AI API  
+**Development Status**: ✅ **AI Research Feature Complete!** - Users can research unknown songs with AI and see results immediately!angoTales
 
 A React-based web application for exploring Argentine Tango songs with AI-powered explanations and ratings.
 
@@ -14,26 +15,59 @@ A React-based web application for exploring Argentine Tango songs with AI-powere
 
 ### Environment Setup
 
-1. **Set System Environment Variable (Recommended for Security):**
+1. **Create .env.local file from template:**
    ```bash
-   # Windows PowerShell
-   $env:GEMINI_API_KEY = "your_actual_gemini_api_key_here"
-   
-   # Windows Command Prompt
-   set GEMINI_API_KEY=your_actual_gemini_api_key_here
-   
-   # Linux/macOS
-   export GEMINI_API_KEY=your_actual_gemini_api_key_here
+   cp .env.example .env.local
    ```
 
-2. **Configure Firebase (in .env.local):**
+2. **Configure all environment variables in .env.local:**
    ```bash
+   # Gemini AI API Key (required for song research)
+   REACT_APP_GEMINI_API_KEY=your_actual_gemini_api_key_here
+   
+   # Firebase Configuration (required for database)
    REACT_APP_FIREBASE_API_KEY=your_firebase_api_key
+   REACT_APP_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
    REACT_APP_FIREBASE_PROJECT_ID=your_project_id
-   # ... other Firebase config variables
+   REACT_APP_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+   REACT_APP_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+   REACT_APP_FIREBASE_APP_ID=your_app_id
+   ```
+
+3. **Verify configuration:**
+   ```bash
+   npm run check-env
    ```
 
    > 🔒 **Security Note**: We use system environment variables for API keys instead of storing them in files for better security.
+
+## 🤖 **AI Research Feature**
+
+TangoTales now features intelligent song research powered by Google Gemini AI:
+
+### **How it Works**
+1. **Search for any tango song** - known or unknown
+2. **If not found** - see "🤖 Research with AI" button
+3. **Click to research** - Gemini AI analyzes the song
+4. **Instant results** - researched song appears immediately with:
+   - Title translation and meaning
+   - Historical context and composer information
+   - Cultural significance and notable performances
+   - Reliable source references
+
+### **Technical Details**
+- **API**: Google Gemini 2.0 Flash model (@google/genai v1.21.0)
+- **Response Format**: Structured JSON with title, date, meaning, cultural notes, sources
+- **Auto-Save**: Researched songs automatically saved to Firestore
+- **Smart Ordering**: New songs appear first in search results (ordered by creation date)
+- **Error Handling**: Graceful fallbacks with retry options
+- **Security**: API keys managed via environment variables and GitHub Secrets
+
+### **User Experience**
+- **No Page Reload**: Search results refresh seamlessly to show new song
+- **Loading States**: Beautiful loading indicators during research
+- **Context Preservation**: Search query and results maintained throughout the process
+- **Immediate Visibility**: Newly researched songs appear at the top of search results
 
 ### Installation and Development
 
@@ -45,20 +79,21 @@ npm install
 npm start
 ```
 
-### 🧪 **Testing Search Functionality**
+### 🧪 **Testing Search & AI Research**
 
 1. **Start the app**: App runs on http://localhost:3001 (configured port)
-2. **Sample data ready**: Database now contains 5 classic tango songs:
-   - La Cumparsita (1916)
-   - Por Una Cabeza (1935)
-   - El Choclo (1903)
-   - Adiós Nonino (1959)
-   - Libertango (1974)
-3. **Test search**: Try searching for "La Cumparsita", "Por Una Cabeza", "Piazzolla", etc.
-4. **Explore features**: 
-   - Click "Show Popular Songs" to see all 5 songs
-   - Use A-Z letter navigation (L, P, E, A for filtering)
+2. **Sample data ready**: Database contains classic tango songs plus AI-researched songs
+3. **Test regular search**: Try searching for existing songs like "La Cumparsita", "Por Una Cabeza"
+4. **Test AI research**: 
+   - Search for unknown songs like "Nostalgias", "Mi Buenos Aires Querido"
+   - Click "🤖 Research with AI" when no results are found
+   - Watch as AI researches the song and adds it to the database
+   - See the newly researched song appear immediately at the top of results
+5. **Explore features**: 
+   - Click "Show Popular Songs" to see all songs
+   - Use A-Z letter navigation for filtering
    - Test mobile responsiveness with browser dev tools
+   - Notice how newly researched songs appear first in search results
 
 **Note**: If you need to reset/repopulate data, open browser console and run:
 ```javascript
