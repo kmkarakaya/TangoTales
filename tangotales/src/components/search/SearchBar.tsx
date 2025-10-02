@@ -1,50 +1,90 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useSearch } from '../../hooks/useSearch';
-import LoadingSpinner from '../common/LoadingSpinner';
+import React, { useRef } from 'react';
+import { searchSongsByTitle } from '../../services/firestore';
+import { Song } from '../../types/song';
 
 interface SearchBarProps {
   placeholder?: string;
   className?: string;
   showButton?: boolean;
   onSearch?: (query: string) => void;
+  onSearchPerformed?: (query: string, results: Song[], error: string | null) => void;
 }
 
 const SearchBar: React.FC<SearchBarProps> = ({ 
   placeholder = "Search for a tango song...", 
   className = "",
   showButton = true,
-  onSearch
+  onSearch,
+  onSearchPerformed
 }) => {
-  const { query, loading, handleSearchChange, handleSearchSubmit } = useSearch();
-  const [localQuery, setLocalQuery] = useState(query);
-  const [isFocused, setIsFocused] = useState(false);
+
+  
+  // No React state for input value or loading - let DOM handle input naturally
   const inputRef = useRef<HTMLInputElement>(null);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
-  useEffect(() => {
-    const delayedSearch = setTimeout(() => {
-      if (localQuery.trim() && onSearch) {
-        onSearch(localQuery.trim());
+  // Perform the actual search - no state updates to prevent re-renders during typing
+  const performSearch = async (searchQuery: string) => {
+    if (!searchQuery.trim()) return;
+    
+    try {
+      const searchResults = await searchSongsByTitle(searchQuery.trim());
+      
+      // Notify parent via callback - this happens outside the component
+      if (onSearchPerformed) {
+        onSearchPerformed(searchQuery, searchResults, null);
       }
-    }, 300);
-
-    return () => clearTimeout(delayedSearch);
-  }, [localQuery, onSearch]);
+      
+      if (onSearch) {
+        onSearch(searchQuery.trim());
+      }
+    } catch (err) {
+      console.error('Search error:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to search songs';
+      
+      // Notify parent of error via callback
+      if (onSearchPerformed) {
+        onSearchPerformed(searchQuery, [], errorMessage);
+      }
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setLocalQuery(value);
-    handleSearchChange(value);
+    const newValue = e.target.value;
+    
+    // Clear previous timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    // Don't search if query is empty
+    if (!newValue.trim()) {
+      return;
+    }
+
+    // Set new timeout for debounced search - NO state updates here
+    searchTimeoutRef.current = setTimeout(() => {
+      performSearch(newValue);
+    }, 300);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    handleSearchSubmit();
+    
+    // Clear timeout and search immediately
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    // Get current value from ref
+    const currentValue = inputRef.current?.value || '';
+    performSearch(currentValue);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      handleSearchSubmit();
+      handleSubmit(e as any);
     }
   };
 
@@ -52,45 +92,27 @@ const SearchBar: React.FC<SearchBarProps> = ({
     <div className={`relative w-full max-w-2xl ${className}`}>
       <div className={`
         bg-white/10 rounded-lg shadow-md border border-white/20 transition-all duration-300 
-        ${isFocused ? 'ring-2 ring-yellow-400/50 scale-105' : ''}
+        focus-within:ring-2 focus-within:ring-yellow-400/50 focus-within:scale-105
       `}>
         <div className="flex items-center p-4">
           <div className="text-2xl mr-3">🎵</div>
           <input
             ref={inputRef}
             type="text"
-            value={localQuery}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setIsFocused(false)}
             placeholder={placeholder}
-            disabled={loading}
-            className="flex-1 bg-transparent text-white placeholder-white/60 outline-none font-body text-lg"
+            className="flex-1 bg-transparent text-gray-900 placeholder-gray-500 outline-none font-body text-lg"
           />
-          {loading ? (
-            <LoadingSpinner size="sm" message="" />
-          ) : (
-            <button 
-              type="submit"
-              onClick={handleSubmit}
-              disabled={!localQuery.trim()}
-              className="ml-3 p-2 rounded-lg hover:bg-white/10 transition-colors disabled:opacity-50"
-            >
-              <span className="text-xl">🔍</span>
-            </button>
-          )}
+          <button 
+            type="submit"
+            onClick={handleSubmit}
+            className="ml-3 p-2 rounded-lg hover:bg-white/10 transition-colors"
+          >
+            <span className="text-xl">🔍</span>
+          </button>
         </div>
       </div>
-      
-      {/* Search suggestions dropdown */}
-      {isFocused && localQuery && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-gray-900/95 rounded-lg p-4 z-50 border border-white/10 shadow-xl">
-          <div className="text-sm text-white/60 font-body">
-            Press Enter to search for "{localQuery}"
-          </div>
-        </div>
-      )}
     </div>
   );
 };

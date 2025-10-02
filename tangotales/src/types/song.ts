@@ -25,7 +25,9 @@ export interface SearchResult {
 }
 
 export interface GeminiResponse {
-  explanation: string;
+  title: string;
+  date: string;
+  title_meaning: string;
+  cultural_notes: string;
   sources: string[];
-  tags: string[];
 }

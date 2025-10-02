@@ -196,6 +196,47 @@ interface NoResultsFoundProps {
 }
 
 const NoResultsFound: React.FC<NoResultsFoundProps> = ({ query }) => {
+  const [isResearching, setIsResearching] = React.useState(false);
+  const [researchError, setResearchError] = React.useState<string | null>(null);
+  
+  const handleResearchWithAI = async () => {
+    if (!query.trim()) {
+      setResearchError('Please enter a song title to research');
+      return;
+    }
+
+    setIsResearching(true);
+    setResearchError(null);
+
+    try {
+      // Import services dynamically to avoid circular dependency issues
+      const { researchSongWithAI } = await import('../../services/gemini');
+      const { createSong } = await import('../../services/firestore');
+      
+      // Research the song with AI
+      const aiResult = await researchSongWithAI({ title: query });
+      
+      // Create song in database
+      const songId = await createSong({
+        title: aiResult.title,
+        explanation: aiResult.explanation,
+        sources: aiResult.sources,
+        tags: aiResult.tags
+      });
+      
+      console.log('Song researched and created successfully:', songId);
+      
+      // Refresh the search to show the new song
+      window.location.reload();
+      
+    } catch (error) {
+      console.error('Failed to research song with AI:', error);
+      setResearchError(error instanceof Error ? error.message : 'Failed to research song');
+    } finally {
+      setIsResearching(false);
+    }
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-md p-8 text-center">
       <h3 className="text-2xl font-bold text-red-700 mb-4">
@@ -208,16 +249,35 @@ const NoResultsFound: React.FC<NoResultsFoundProps> = ({ query }) => {
         }
       </p>
       
-      {/* Future: Research Button (Step 5) */}
+      {/* AI Research Button */}
       <div className="space-y-3">
         <p className="text-gray-500 text-sm">
-          Don't worry! In the next update, you'll be able to research new songs with AI.
+          {query ? "Would you like me to research this song for you?" : "Enter a song title to research with AI."}
         </p>
+        
+        {researchError && (
+          <div className="text-red-600 text-sm mb-3">
+            {researchError}
+          </div>
+        )}
+        
         <button 
-          disabled
-          className="px-6 py-3 bg-gray-400 text-white rounded-lg font-semibold opacity-50 cursor-not-allowed"
+          onClick={handleResearchWithAI}
+          disabled={isResearching || !query.trim()}
+          className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${
+            isResearching || !query.trim()
+              ? 'bg-gray-400 text-white opacity-50 cursor-not-allowed'
+              : 'bg-blue-600 hover:bg-blue-700 text-white hover:scale-105 shadow-lg'
+          }`}
         >
-          🤖 Research with AI (Coming Soon)
+          {isResearching ? (
+            <>
+              <LoadingSpinner size="sm" className="inline mr-2" />
+              🤖 Researching...
+            </>
+          ) : (
+            '🤖 Research with AI'
+          )}
         </button>
       </div>
     </div>

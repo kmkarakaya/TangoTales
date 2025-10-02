@@ -3,7 +3,7 @@
 A React-based web application for exploring Argentine Tango songs with AI-powered explanations and ratings.
 
 **Tech Stack**: React 18, TypeScript, Tailwind CSS, Firebase (Firestore, Hosting), Gemini AI API  
-**Development Status**: Step 3 Complete - Search functionality operational! 🎵
+**Development Status**: Database Populated ✅ - 5 sample songs operational! �
 
 ## 🚀 Quick Start
 
@@ -14,18 +14,26 @@ A React-based web application for exploring Argentine Tango songs with AI-powere
 
 ### Environment Setup
 
-1. Copy the environment template:
+1. **Set System Environment Variable (Recommended for Security):**
    ```bash
-   cp .env.example .env.local
+   # Windows PowerShell
+   $env:GEMINI_API_KEY = "your_actual_gemini_api_key_here"
+   
+   # Windows Command Prompt
+   set GEMINI_API_KEY=your_actual_gemini_api_key_here
+   
+   # Linux/macOS
+   export GEMINI_API_KEY=your_actual_gemini_api_key_here
    ```
 
-2. Fill in your environment variables in `.env.local`:
+2. **Configure Firebase (in .env.local):**
    ```bash
    REACT_APP_FIREBASE_API_KEY=your_firebase_api_key
    REACT_APP_FIREBASE_PROJECT_ID=your_project_id
-   REACT_APP_GEMINI_API_KEY=your_gemini_api_key
    # ... other Firebase config variables
    ```
+
+   > 🔒 **Security Note**: We use system environment variables for API keys instead of storing them in files for better security.
 
 ### Installation and Development
 
@@ -40,12 +48,22 @@ npm start
 ### 🧪 **Testing Search Functionality**
 
 1. **Start the app**: App runs on http://localhost:3001 (configured port)
-2. **Add sample data**: Open browser console and run:
-   ```javascript
-   window.populateSampleData()
-   ```
-3. **Test search**: Try searching for "La Cumparsita", "Por Una Cabeza", etc.
-4. **Explore features**: Use "Show Popular Songs" button and test mobile responsiveness
+2. **Sample data ready**: Database now contains 5 classic tango songs:
+   - La Cumparsita (1916)
+   - Por Una Cabeza (1935)
+   - El Choclo (1903)
+   - Adiós Nonino (1959)
+   - Libertango (1974)
+3. **Test search**: Try searching for "La Cumparsita", "Por Una Cabeza", "Piazzolla", etc.
+4. **Explore features**: 
+   - Click "Show Popular Songs" to see all 5 songs
+   - Use A-Z letter navigation (L, P, E, A for filtering)
+   - Test mobile responsiveness with browser dev tools
+
+**Note**: If you need to reset/repopulate data, open browser console and run:
+```javascript
+window.populateSampleData()
+```
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
