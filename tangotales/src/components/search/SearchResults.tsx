@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useSearch } from '../../hooks/useSearch';
 import { Song } from '../../types/song';
-import { LoadingSpinner, ErrorMessage } from '../common';
+import { LoadingSpinner, ErrorMessage, StarRating } from '../common';
 import { EnhancedSongDetail } from '../songs/EnhancedSongDetail';
+import { addRating } from '../../services/firestore';
 
 interface EnhanceWithAIButtonProps {
   songs: Song[];
@@ -325,6 +326,36 @@ interface SongCardProps {
 }
 
 const SongCard: React.FC<SongCardProps> = ({ song, onClick, showEnhanceButton = false, onEnhance, isEnhancing = false }) => {
+  const [submittingRating, setSubmittingRating] = useState(false);
+  const [localRating, setLocalRating] = useState(song.averageRating || 0);
+  const [localTotalRatings, setLocalTotalRatings] = useState(song.totalRatings || 0);
+
+  const handleRating = async (rating: number) => {
+    if (submittingRating) return; // Prevent double-submission
+    
+    setSubmittingRating(true);
+    try {
+      await addRating({
+        songId: song.id,
+        rating,
+      });
+      
+      // Optimistic update (immediate UI feedback)
+      const newTotal = localTotalRatings + 1;
+      const newAverage = ((localRating * localTotalRatings) + rating) / newTotal;
+      
+      // Update local state
+      setLocalRating(newAverage);
+      setLocalTotalRatings(newTotal);
+      
+    } catch (error) {
+      console.error('Rating submission failed:', error);
+      // Simple error feedback - could show toast notification
+    } finally {
+      setSubmittingRating(false);
+    }
+  };
+
   // Format date
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('en-US', {
@@ -402,11 +433,15 @@ const SongCard: React.FC<SongCardProps> = ({ song, onClick, showEnhanceButton = 
           <div className="text-sm text-gray-500 mb-1">
             {song.searchCount} searches
           </div>
-          {song.averageRating > 0 && (
-            <div className="flex items-center text-sm text-yellow-600">
-              ⭐ {song.averageRating.toFixed(1)} ({song.totalRatings})
-            </div>
-          )}
+          <div onClick={(e) => e.stopPropagation()}>
+            <StarRating 
+              rating={localRating}
+              onRate={handleRating}
+              readonly={submittingRating}
+              size="sm"
+              totalRatings={localTotalRatings}
+            />
+          </div>
         </div>
       </div>
 
