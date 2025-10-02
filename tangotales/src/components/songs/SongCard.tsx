@@ -41,7 +41,7 @@ export const SongCard: React.FC<SongCardProps> = ({
     <div 
       onClick={onClick}
       className={`
-        glass-card p-4 cursor-pointer transition-all duration-300 hover-lift hover-glow
+        bg-white/10 rounded-lg p-4 cursor-pointer transition-all duration-300 hover:bg-white/20 hover:shadow-lg hover:-translate-y-1 border border-white/20
         ${className}
       `}
     >
@@ -53,7 +53,7 @@ export const SongCard: React.FC<SongCardProps> = ({
                 #{rank}
               </span>
             )}
-            <h3 className="text-lg font-semibold text-white text-shadow-medium truncate">
+            <h3 className="text-lg font-semibold text-white truncate">
               {title}
             </h3>
           </div>

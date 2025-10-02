@@ -30,16 +30,16 @@ class ErrorBoundary extends Component<Props, State> {
   public render() {
     if (this.state.hasError) {
       return this.props.fallback || (
-        <div className="glass-card p-8 text-center max-w-md mx-auto mt-8">
+        <div className="bg-white rounded-lg shadow-md p-8 text-center max-w-md mx-auto mt-8">
           <div className="text-6xl mb-4">🎭</div>
-          <h2 className="text-2xl font-tango font-bold mb-4 text-yellow-400">
+          <h2 className="text-2xl font-bold mb-4 text-tango-red">
             Oops! Something went wrong
           </h2>
-          <p className="text-white/80 mb-6 font-body">
+          <p className="text-gray-700 mb-6">
             Don't worry, even the best tango dancers sometimes miss a step.
           </p>
           <button 
-            className="btn-primary"
+            className="bg-tango-red hover:bg-red-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
             onClick={() => window.location.reload()}
           >
             Try Again

@@ -51,7 +51,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
   return (
     <div className={`relative w-full max-w-2xl ${className}`}>
       <div className={`
-        glass-card transition-all duration-300 
+        bg-white/10 rounded-lg shadow-md border border-white/20 transition-all duration-300 
         ${isFocused ? 'ring-2 ring-yellow-400/50 scale-105' : ''}
       `}>
         <div className="flex items-center p-4">
@@ -85,7 +85,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
       
       {/* Search suggestions dropdown */}
       {isFocused && localQuery && (
-        <div className="absolute top-full left-0 right-0 mt-2 glass-card-dark p-4 z-50 slide-in-right">
+        <div className="absolute top-full left-0 right-0 mt-2 bg-gray-900/95 rounded-lg p-4 z-50 border border-white/10 shadow-xl">
           <div className="text-sm text-white/60 font-body">
             Press Enter to search for "{localQuery}"
           </div>

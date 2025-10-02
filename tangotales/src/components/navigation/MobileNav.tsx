@@ -13,7 +13,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ isOpen, onToggle, onClose 
     <>
       {/* Mobile Menu Button */}
       <button
-        className="lg:hidden p-2 rounded-lg glass-card hover:bg-white/20 transition-colors"
+        className="lg:hidden p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
         onClick={onToggle}
       >
         <div className="w-6 h-6 flex flex-col justify-center space-y-1">
@@ -25,8 +25,8 @@ export const MobileNav: React.FC<MobileNavProps> = ({ isOpen, onToggle, onClose 
 
       {/* Mobile Overlay */}
       {isOpen && (
-        <div className="lg:hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm">
-          <div className="glass-card-dark m-4 p-6 fade-in">
+        <div className="lg:hidden fixed inset-0 z-50 bg-black/90">
+          <div className="bg-gray-900/95 m-4 p-6 rounded-lg shadow-xl border border-white/10">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-tango font-bold text-yellow-400">Menu</h2>
               <button 
@@ -40,12 +40,12 @@ export const MobileNav: React.FC<MobileNavProps> = ({ isOpen, onToggle, onClose 
             {/* Mobile menu content */}
             <div className="space-y-6">
               {/* Random Button */}
-              <button className="w-full btn-primary">
+              <button className="w-full bg-tango-red hover:bg-red-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors">
                 🎲 Surprise Me!
               </button>
               
               {/* Popular Songs */}
-              <div className="glass-card p-4">
+              <div className="bg-white/5 rounded-lg p-4 border border-white/10">
                 <h3 className="font-semibold mb-4 text-yellow-400">🏆 Popular Songs</h3>
                 <div className="space-y-2">
                   {popularSongs.slice(0, 5).map((song, index) => (
@@ -61,7 +61,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ isOpen, onToggle, onClose 
               </div>
 
               {/* Navigation Links */}
-              <div className="glass-card p-4">
+              <div className="bg-white/5 rounded-lg p-4 border border-white/10">
                 <h3 className="font-semibold mb-4 text-yellow-400">Links</h3>
                 <div className="space-y-2">
                   <button className="block text-white hover:text-yellow-400 transition-colors text-left w-full">About</button>
