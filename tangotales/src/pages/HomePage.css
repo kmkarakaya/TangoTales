@@ -1,23 +1,68 @@
 /* Tango-themed background with painting image */
 .tango-background {
-  /* Background image with dark overlay for text readability */
-  background-image: 
-    linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)),
-    url(../../public/images/tango-background.jpg);
+  /* Background properties (image set via inline style for public folder support) */
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
   background-attachment: fixed;
   
-  /* Fallback gradient if image is not available */
+  /* Fallback solid background if image is not available */
   background-color: #A11729;
   
   position: relative;
+}
+
+/* Content container with very light background - shows background image clearly */
+.content-overlay {
+  background: rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(3px);
+  border-radius: 1rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+/* Card backgrounds with minimal opacity - background image dominates */
+.feature-card {
+  background: rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(4px);
+  border-radius: 1rem;
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.2);
+}
+
+.search-container {
+  background: rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(4px);
+  border-radius: 1rem;
+  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.2);
+}
+
+/* Very strong text shadows for readability with minimal container backgrounds */
+.text-shadow-strong {
+  text-shadow: 
+    4px 4px 8px rgba(0, 0, 0, 1),
+    2px 2px 4px rgba(0, 0, 0, 0.95),
+    1px 1px 2px rgba(0, 0, 0, 0.9),
+    0px 0px 12px rgba(0, 0, 0, 0.8),
+    0px 0px 24px rgba(0, 0, 0, 0.6),
+    0px 0px 36px rgba(0, 0, 0, 0.4);
+}
+
+.text-shadow-medium {
+  text-shadow: 
+    3px 3px 6px rgba(0, 0, 0, 1),
+    2px 2px 4px rgba(0, 0, 0, 0.9),
+    1px 1px 2px rgba(0, 0, 0, 0.8),
+    0px 0px 10px rgba(0, 0, 0, 0.7),
+    0px 0px 20px rgba(0, 0, 0, 0.5),
+    0px 0px 30px rgba(0, 0, 0, 0.3);
 }
 
 /* Responsive adjustments for mobile */
 @media (max-width: 768px) {
   .tango-background {
     background-attachment: scroll !important;
+  }
+  
+  .content-overlay {
+    margin: 1rem;
   }
 }
