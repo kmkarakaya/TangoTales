@@ -20,30 +20,22 @@ export const AlphabetNav: React.FC<AlphabetNavProps> = ({
   };
 
   return (
-    <div className={`glass-card fade-in ${className}`}>
-      <div className="p-4">
-        <h2 className="text-lg font-semibold mb-3 text-shadow-medium text-yellow-400">
-          Browse by Letter
-        </h2>
-        <div className="flex space-x-2 overflow-x-auto scrollbar-hide">
-          {alphabet.map(letter => (
-            <button
-              key={letter}
-              onClick={() => handleLetterClick(letter)}
-              className={`
-                flex-shrink-0 w-10 h-10 rounded-lg transition-all duration-200 
-                font-semibold text-shadow-medium hover-lift
-                ${activeLetter === letter 
-                  ? 'bg-yellow-400/30 text-yellow-400 ring-2 ring-yellow-400/50' 
-                  : 'bg-black/20 hover:bg-black/40 text-white'
-                }
-              `}
-            >
-              {letter}
-            </button>
-          ))}
-        </div>
-      </div>
+    <div className={`flex flex-wrap gap-2 ${className}`}>
+      {alphabet.map(letter => (
+        <button
+          key={letter}
+          onClick={() => handleLetterClick(letter)}
+          className={`
+            w-10 h-10 rounded-lg font-semibold transition-all duration-200
+            ${activeLetter === letter 
+              ? 'bg-red-600 text-white ring-2 ring-red-400' 
+              : 'bg-gray-100 text-gray-700 hover:bg-red-100 hover:text-red-700'
+            }
+          `}
+        >
+          {letter}
+        </button>
+      ))}
     </div>
   );
 };

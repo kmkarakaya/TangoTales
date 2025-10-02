@@ -1,69 +1,121 @@
 import React from 'react';
 import { SearchBar, SearchResults } from '../components/search';
-import './HomePage.css';
+import { AlphabetNav } from '../components/navigation';
+import { useSearch } from '../hooks/useSearch';
 
 const HomePage: React.FC = () => {
-  const backgroundStyle = {
-    backgroundImage: `linear-gradient(135deg, rgba(0, 0, 0, 0.3), rgba(161, 23, 41, 0.2)), url('/images/tango-background.jpg')`,
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-    backgroundRepeat: 'no-repeat',
-    backgroundAttachment: 'fixed' as const
-  };
+  const { loadSongsByLetter, loadPopularSongs } = useSearch();
+
+  React.useEffect(() => {
+    // Load popular songs on initial mount
+    loadPopularSongs(12);
+  }, []);
 
   return (
-    <div className="min-h-screen tango-background" style={backgroundStyle}>
-      <div className="container mx-auto px-4 py-12">
-        {/* Hero Section */}
-        <div className="text-center mb-12">
-          <h1 className="text-6xl font-bold mb-6 text-shadow-strong text-yellow-400 font-tango">
-            🎵 TangoTales
-          </h1>
-          <p className="text-2xl mb-8 text-white text-shadow-medium font-medium max-w-3xl mx-auto">
-            Discover the stories behind Argentine Tango songs with AI-powered explanations
-          </p>
-        </div>
-        
-        {/* Search Section */}
-        <div className="max-w-3xl mx-auto mb-12">
-          <div className="search-container p-6">
-            <SearchBar placeholder="Search for a tango song..." />
-          </div>
-        </div>
-        
-        {/* Search Results */}
-        <div className="max-w-5xl mx-auto mb-12">
-          <SearchResults showPopularOnEmpty={true} />
-        </div>
-        
-        {/* Features Grid */}
-        <div className="max-w-5xl mx-auto">
-          <div className="content-overlay p-8 mb-8">
-            <h2 className="text-3xl font-bold text-yellow-400 text-shadow-strong mb-8 text-center font-tango">
-              How it Works
-            </h2>
-            <div className="grid md:grid-cols-3 gap-6">
-              <div className="feature-card p-6 text-center">
-                <div className="text-5xl mb-4">🔍</div>
-                <h3 className="text-xl font-bold text-yellow-400 text-shadow-medium mb-3">Search</h3>
-                <p className="text-white/90 text-shadow-medium">Search our database or browse by popularity</p>
-              </div>
-              
-              <div className="feature-card p-6 text-center">
-                <div className="text-5xl mb-4">🤖</div>
-                <h3 className="text-xl font-bold text-yellow-400 text-shadow-medium mb-3">AI Research</h3>
-                <p className="text-white/90 text-shadow-medium">Get AI-powered explanations and history</p>
-              </div>
-              
-              <div className="feature-card p-6 text-center">
-                <div className="text-5xl mb-4">📚</div>
-                <h3 className="text-xl font-bold text-yellow-400 text-shadow-medium mb-3">Learn</h3>
-                <p className="text-white/90 text-shadow-medium">Explore stories and cultural significance</p>
-              </div>
+    <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-yellow-50">
+      {/* Header */}
+      <header className="bg-white shadow-md sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl lg:text-4xl font-bold text-red-700">
+                🎵 TangoTales
+              </h1>
+              <p className="text-gray-600 mt-1">
+                Discover the stories behind classic tango songs
+              </p>
             </div>
           </div>
         </div>
-      </div>
+      </header>
+
+      {/* Main Content - 3 Column Grid */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Left Sidebar - A-Z Navigation (Desktop Only) */}
+          <aside className="hidden lg:block lg:col-span-2">
+            <div className="sticky top-24 bg-white rounded-lg shadow-md p-4">
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                Browse by Letter
+              </h3>
+              <AlphabetNav onLetterClick={loadSongsByLetter} />
+            </div>
+          </aside>
+
+          {/* Center Content - Search & Results */}
+          <section className="lg:col-span-7">
+            {/* Search Bar */}
+            <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+              <SearchBar placeholder="Search for a tango song..." />
+            </div>
+
+            {/* Results */}
+            <SearchResults showPopularOnEmpty={true} />
+          </section>
+
+          {/* Right Sidebar - Popular Songs */}
+          <aside className="lg:col-span-3">
+            <div className="sticky top-24 bg-white rounded-lg shadow-md p-4">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                🔥 Popular Songs
+              </h3>
+              
+              <button
+                onClick={() => loadPopularSongs(20)}
+                className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                Show Popular Songs
+              </button>
+              
+              <p className="text-xs text-gray-500 mt-3 text-center">
+                Click to see trending tango songs
+              </p>
+            </div>
+          </aside>
+        </div>
+
+        {/* Feature Cards - Below Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+          <div className="bg-white rounded-lg shadow-md p-6 text-center hover:shadow-lg transition-shadow">
+            <div className="text-4xl mb-3">🔍</div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Search Songs
+            </h3>
+            <p className="text-sm text-gray-600">
+              Find tango songs by title or browse alphabetically
+            </p>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-md p-6 text-center hover:shadow-lg transition-shadow">
+            <div className="text-4xl mb-3">🤖</div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              AI-Powered Research
+            </h3>
+            <p className="text-sm text-gray-600">
+              Get detailed explanations powered by Gemini AI
+            </p>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-md p-6 text-center hover:shadow-lg transition-shadow">
+            <div className="text-4xl mb-3">⭐</div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Rate & Review
+            </h3>
+            <p className="text-sm text-gray-600">
+              Share your thoughts and help others discover great songs
+            </p>
+          </div>
+        </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="bg-white border-t border-gray-200 mt-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <p className="text-center text-sm text-gray-600">
+            © 2025 TangoTales. Discover the stories behind tango music.
+          </p>
+        </div>
+      </footer>
     </div>
   );
 };

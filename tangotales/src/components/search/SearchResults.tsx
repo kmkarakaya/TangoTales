@@ -26,9 +26,9 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   if (loading) {
     return (
       <div className={`${className}`}>
-        <div className="content-overlay p-8 text-center">
+        <div className="bg-white rounded-lg shadow-md p-8 text-center">
           <LoadingSpinner size="lg" className="mb-4" />
-          <p className="text-white text-shadow-medium">Searching tango songs...</p>
+          <p className="text-gray-600">Searching tango songs...</p>
         </div>
       </div>
     );
@@ -85,11 +85,11 @@ const SearchResultsList: React.FC<SearchResultsListProps> = ({ results, query })
   return (
     <div className="space-y-6">
       {/* Results Header */}
-      <div className="content-overlay p-4">
-        <h2 className="text-2xl font-bold text-yellow-400 text-shadow-strong mb-2">
+      <div className="bg-white rounded-lg shadow-md p-4">
+        <h2 className="text-2xl font-bold text-red-700 mb-2">
           Search Results
         </h2>
-        <p className="text-white text-shadow-medium">
+        <p className="text-gray-600">
           Found {results.length} song{results.length !== 1 ? 's' : ''} 
           {query && ` for "${query}"`}
         </p>
@@ -126,14 +126,14 @@ const SongCard: React.FC<SongCardProps> = ({ song }) => {
   };
 
   return (
-    <div className="content-overlay p-6 cursor-pointer hover:bg-black/20 transition-all duration-200">
+    <div className="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-all duration-200">
       {/* Song Title */}
-      <h3 className="text-2xl font-bold text-yellow-400 text-shadow-strong mb-3">
+      <h3 className="text-2xl font-bold text-red-700 mb-3">
         <span className="text-lg">🎵</span> {song.title}
       </h3>
 
       {/* Song Stats */}
-      <div className="flex items-center space-x-4 mb-4 text-sm text-white/80">
+      <div className="flex items-center space-x-4 mb-4 text-sm text-gray-600">
         <div className="flex items-center">
           <svg className="w-3 h-3 mr-1" style={{width: '12px', height: '12px'}} fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
@@ -143,21 +143,21 @@ const SongCard: React.FC<SongCardProps> = ({ song }) => {
         
         {song.averageRating > 0 && (
           <div className="flex items-center">
-            <svg className="w-3 h-3 mr-1 text-yellow-400" style={{width: '12px', height: '12px'}} fill="currentColor" viewBox="0 0 20 20">
+            <svg className="w-3 h-3 mr-1 text-yellow-500" style={{width: '12px', height: '12px'}} fill="currentColor" viewBox="0 0 20 20">
               <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
             </svg>
             {song.averageRating.toFixed(1)} ({song.totalRatings} ratings)
           </div>
         )}
         
-        <div className="text-white/60">
+        <div className="text-gray-500">
           Added {formatDate(song.createdAt)}
         </div>
       </div>
 
       {/* Song Explanation Preview */}
       {song.explanation && (
-        <p className="text-white text-shadow-medium mb-4 leading-relaxed">
+        <p className="text-gray-700 mb-4 leading-relaxed">
           {truncateText(song.explanation)}
         </p>
       )}
@@ -168,13 +168,13 @@ const SongCard: React.FC<SongCardProps> = ({ song }) => {
           {song.tags.slice(0, 5).map((tag, index) => (
             <span 
               key={index}
-              className="px-3 py-1 bg-yellow-400/20 text-yellow-300 rounded-full text-sm font-medium"
+              className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm font-medium"
             >
               {tag}
             </span>
           ))}
           {song.tags.length > 5 && (
-            <span className="px-3 py-1 bg-gray-400/20 rounded-full text-sm force-white-text">
+            <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">
               +{song.tags.length - 5} more
             </span>
           )}
@@ -183,7 +183,7 @@ const SongCard: React.FC<SongCardProps> = ({ song }) => {
 
       {/* Sources */}
       {song.sources.length > 0 && (
-        <div className="text-sm text-white/70">
+        <div className="text-sm text-gray-600">
           <span className="font-medium">Sources:</span> {song.sources.length} reference{song.sources.length !== 1 ? 's' : ''}
         </div>
       )}
@@ -197,11 +197,11 @@ interface NoResultsFoundProps {
 
 const NoResultsFound: React.FC<NoResultsFoundProps> = ({ query }) => {
   return (
-    <div className="content-overlay p-8 text-center">
-      <h3 className="text-2xl font-bold text-yellow-400 text-shadow-strong mb-4">
+    <div className="bg-white rounded-lg shadow-md p-8 text-center">
+      <h3 className="text-2xl font-bold text-red-700 mb-4">
         No Songs Found
       </h3>
-      <p className="text-white text-shadow-medium mb-6 max-w-md mx-auto">
+      <p className="text-gray-600 mb-6 max-w-md mx-auto">
         {query 
           ? `We couldn't find any tango songs matching "${query}" in our database.`
           : "No songs found in our database."
@@ -210,12 +210,12 @@ const NoResultsFound: React.FC<NoResultsFoundProps> = ({ query }) => {
       
       {/* Future: Research Button (Step 5) */}
       <div className="space-y-3">
-        <p className="text-white/80 text-sm">
+        <p className="text-gray-500 text-sm">
           Don't worry! In the next update, you'll be able to research new songs with AI.
         </p>
         <button 
           disabled
-          className="px-6 py-3 bg-gray-500 text-white rounded-lg font-semibold opacity-50 cursor-not-allowed"
+          className="px-6 py-3 bg-gray-400 text-white rounded-lg font-semibold opacity-50 cursor-not-allowed"
         >
           🤖 Research with AI (Coming Soon)
         </button>
@@ -234,17 +234,17 @@ const PopularSongsSection: React.FC<PopularSongsSectionProps> = ({ onLoadPopular
   };
 
   return (
-    <div className="content-overlay p-8 text-center">
-      <h3 className="text-2xl font-bold text-shadow-strong mb-4 force-yellow-text">
+    <div className="bg-white rounded-lg shadow-md p-8 text-center">
+      <h3 className="text-2xl font-bold text-red-700 mb-4">
         Discover Popular Tango Songs
       </h3>
-      <p className="text-shadow-medium mb-6 max-w-md mx-auto force-white-text">
+      <p className="text-gray-600 mb-6 max-w-md mx-auto">
         Start by exploring our most searched tango songs, or use the search bar above to find a specific song.
       </p>
       
       <button 
         onClick={handleLoadPopular}
-        className="px-8 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold shadow-lg transition-all duration-200 transform hover:scale-105"
+        className="px-8 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold shadow-lg transition-all duration-200 hover:scale-105"
       >
         🎵 Show Popular Songs
       </button>

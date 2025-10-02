@@ -1,41 +1,41 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { SearchBar, SearchResults } from '../components/search';
+import { AlphabetNav } from '../components/navigation';
+import { useSearch } from '../hooks/useSearch';
 
 const SearchPage: React.FC = () => {
-  const backgroundStyle = {
-    backgroundImage: `linear-gradient(135deg, rgba(0, 0, 0, 0.3), rgba(161, 23, 41, 0.2)), url('/images/tango-background.jpg')`,
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-    backgroundRepeat: 'no-repeat',
-    backgroundAttachment: 'fixed' as const
-  };
+  const { loadSongsByLetter } = useSearch();
 
   return (
-    <div className="min-h-screen tango-background" style={backgroundStyle}>
-      <div className="container mx-auto px-4 py-8">
-        {/* Simple Header */}
-        <div className="text-center mb-8">
-          <Link to="/">
-            <h1 className="text-4xl font-bold text-yellow-400 text-shadow-strong font-tango mb-2">
-              🎵 TangoTales
+    <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-yellow-50">
+      {/* Header */}
+      <header className="bg-white shadow-md sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <Link to="/" className="inline-block">
+            <h1 className="text-2xl font-bold text-red-700">
+              🎵 TangoTales Search
             </h1>
           </Link>
-          <p className="text-white/80 text-shadow-medium">Search Results</p>
         </div>
+      </header>
 
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Search Bar */}
-        <div className="max-w-3xl mx-auto mb-8">
-          <div className="search-container p-6">
-            <SearchBar placeholder="Search for a tango song..." />
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <SearchBar placeholder="Search for a tango song..." />
+          
+          {/* A-Z Navigation */}
+          <div className="pt-4 mt-4 border-t border-gray-200">
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">Browse by Letter</h3>
+            <AlphabetNav onLetterClick={loadSongsByLetter} />
           </div>
         </div>
 
         {/* Results */}
-        <div className="max-w-5xl mx-auto">
-          <SearchResults showPopularOnEmpty={false} />
-        </div>
-      </div>
+        <SearchResults showPopularOnEmpty={false} />
+      </main>
     </div>
   );
 };
