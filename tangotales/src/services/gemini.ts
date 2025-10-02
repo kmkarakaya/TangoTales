@@ -29,7 +29,7 @@ export const researchSongWithAI = async (params: ResearchSongParams): Promise<Re
     const prompt = createResearchPrompt(params.title, params.artist);
     
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.0-flash',
       contents: prompt,
       config: {
         systemInstruction: 'You are a tango song expert. You know Argentine tango, history and culture. You can also search web for resources.',
