@@ -129,4 +129,23 @@ interface Rating {
 - Check responsive design on mobile/tablet viewports
 - Test error states and loading indicators
 
+## Terminal Commands
+
+**CRITICAL**: When running terminal commands, always use the correct directory navigation:
+
+```bash
+# CORRECT way to navigate and start development server
+cd "C:\Codes\Tango Songs\tangotales" ; npm start
+
+# WRONG - This will fail
+cd tangotales
+npm start
+```
+
+**Required Terminal Command Format**:
+- Use semicolon (`;`) to chain commands in PowerShell
+- Use full absolute path in quotes: `"C:\Codes\Tango Songs\tangotales"`
+- Never use relative paths like `cd tangotales` - they don't work reliably
+- Always navigate to the React app directory BEFORE running npm commands
+
 **Remember**: Maintain free-tier Firebase constraints - no server-side code, Cloud Functions, or Admin SDK usage.

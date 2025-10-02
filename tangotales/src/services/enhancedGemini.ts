@@ -2,8 +2,32 @@ import { GoogleGenAI } from '@google/genai';
 import { config } from '../utils/config';
 import { SongMetadata, Recording, Performer } from '../types/song';
 
-// Initialize Gemini AI client
-const ai = new GoogleGenAI({ apiKey: config.gemini.apiKey });
+// Debug logging for Gemini API configuration
+console.log('🔍 GEMINI DEBUG - Configuration check:');
+console.log('- API Key exists:', !!config.gemini.apiKey);
+console.log('- API Key length:', config.gemini.apiKey?.length || 0);
+console.log('- API Key prefix:', config.gemini.apiKey?.substring(0, 10) + '...' || 'none');
+console.log('- Environment:', process.env.NODE_ENV);
+console.log('- All env vars with GEMINI:', Object.keys(process.env).filter(k => k.includes('GEMINI')));
+
+// Initialize Gemini AI client with error handling
+let ai: GoogleGenAI | null = null;
+
+try {
+  if (!config.gemini.apiKey) {
+    console.error('❌ GEMINI DEBUG - API key is missing or empty');
+    console.error('Expected env var: REACT_APP_GEMINI_API_KEY');
+    console.error('Current env vars:', {
+      REACT_APP_GEMINI_API_KEY: process.env.REACT_APP_GEMINI_API_KEY ? 'SET' : 'MISSING',
+      GEMINI_API_KEY: process.env.GEMINI_API_KEY ? 'SET' : 'MISSING'
+    });
+  } else {
+    ai = new GoogleGenAI({ apiKey: config.gemini.apiKey });
+    console.log('✅ GEMINI DEBUG - Client initialized successfully');
+  }
+} catch (initError) {
+  console.error('❌ GEMINI DEBUG - Client initialization failed:', initError);
+}
 
 export interface EnhancedSongParams {
   title: string;
@@ -94,31 +118,73 @@ class SongInformationService {
   private chatSessions = new Map<string, any>();
   
   async getEnhancedSongInformation(params: EnhancedSongParams): Promise<EnhancedSongResult & { metadata: SongMetadata }> {
-    const sessionKey = this.normalizeTitle(params.title);
+    console.log('🚀 GEMINI DEBUG - Starting enhanced song information request');
+    console.log('- Song title:', params.title);
+    console.log('- AI client status:', ai ? 'INITIALIZED' : 'NULL');
     
-    if (!this.chatSessions.has(sessionKey)) {
-      const chat = ai.chats.create({
-        model: "gemini-2.5-flash",
-        config: {
-          temperature: 0.3, // Lower for factual information
-          maxOutputTokens: 2048
-        }
-      });
-      this.chatSessions.set(sessionKey, chat);
+    // Check if AI client is available
+    if (!ai) {
+      console.error('❌ GEMINI DEBUG - AI client is null, cannot proceed');
+      throw new Error('Gemini AI client not initialized. Check API key configuration.');
     }
     
-    const chat = this.chatSessions.get(sessionKey)!;
-    return this.gatherInformationWithChat(chat, params.title);
+    const sessionKey = this.normalizeTitle(params.title);
+    console.log('- Session key:', sessionKey);
+    console.log('- Existing sessions:', this.chatSessions.size);
+    
+    try {
+      if (!this.chatSessions.has(sessionKey)) {
+        console.log('📝 GEMINI DEBUG - Creating new chat session');
+        
+        const chat = ai.chats.create({
+          model: "gemini-2.5-flash",
+          config: {
+            temperature: 0.3, // Lower for factual information
+            maxOutputTokens: 2048
+          }
+        });
+        
+        console.log('✅ GEMINI DEBUG - Chat session created successfully');
+        this.chatSessions.set(sessionKey, chat);
+      } else {
+        console.log('♻️ GEMINI DEBUG - Reusing existing chat session');
+      }
+      
+      const chat = this.chatSessions.get(sessionKey)!;
+      console.log('🔄 GEMINI DEBUG - Starting information gathering');
+      
+      return await this.gatherInformationWithChat(chat, params.title);
+      
+    } catch (error) {
+      console.error('❌ GEMINI DEBUG - Error in getEnhancedSongInformation:');
+      console.error('- Error type:', error?.constructor.name);
+      console.error('- Error message:', (error as Error)?.message);
+      console.error('- Stack trace:', (error as Error)?.stack);
+      
+      // Re-throw with more context
+      throw new Error(`Failed to get enhanced song information for "${params.title}": ${(error as Error)?.message}`);
+    }
   }
   
   private async gatherInformationWithChat(chat: any, songTitle: string): Promise<EnhancedSongResult & { metadata: SongMetadata }> {
     let retryCount = 0;
+    console.log(`📡 GEMINI DEBUG - Starting chat interaction for "${songTitle}"`);
     
     try {
       // Step 1: Initial comprehensive request
+      console.log('📤 GEMINI DEBUG - Sending initial prompt');
       const initialPrompt = `${ENHANCED_SYSTEM_PROMPT}\n\nProvide comprehensive information about the tango song: "${songTitle}"`;
+      console.log('- Prompt length:', initialPrompt.length);
+      console.log('- Prompt preview:', initialPrompt.substring(0, 200) + '...');
       
+      console.log('⏳ GEMINI DEBUG - Waiting for API response...');
       const response = await chat.sendMessage({ message: initialPrompt });
+      
+      console.log('📥 GEMINI DEBUG - Received response');
+      console.log('- Response type:', typeof response.text);
+      console.log('- Response length:', response.text?.length || 0);
+      console.log('- Response preview:', response.text?.substring(0, 300) + '...' || 'EMPTY');
+      
       let songData = this.parseAndValidateResponse(response.text);
       
       // Step 2: Targeted requests for missing required fields
@@ -189,12 +255,76 @@ class SongInformationService {
   }
   
   private parseAndValidateResponse(responseText: string): Partial<EnhancedSongResult> {
-    const cleaned = responseText
-      .replace(/```json\n?/g, '')
-      .replace(/```\n?/g, '')
-      .trim();
+    console.log('🔍 GEMINI DEBUG - Parsing and validating response');
+    console.log('- Raw response length:', responseText?.length || 0);
+    console.log('- Raw response type:', typeof responseText);
+    console.log('- Raw response preview:', responseText?.substring(0, 500) + '...' || 'EMPTY');
     
-    return JSON.parse(cleaned);
+    if (!responseText || typeof responseText !== 'string') {
+      console.error('❌ GEMINI DEBUG - Invalid response text:', responseText);
+      throw new Error('Response text is empty or not a string');
+    }
+    
+    try {
+      const cleaned = responseText
+        .replace(/```json\n?/g, '')
+        .replace(/```\n?/g, '')
+        .trim();
+      
+      console.log('- Cleaned response length:', cleaned.length);
+      console.log('- Cleaned response preview:', cleaned.substring(0, 300) + '...');
+      
+      if (!cleaned.startsWith('{')) {
+        console.error('❌ GEMINI DEBUG - Response does not start with JSON object');
+        console.error('- First 100 chars:', cleaned.substring(0, 100));
+        throw new Error('Response is not valid JSON - does not start with {');
+      }
+      
+      let parsed: any;
+      try {
+        parsed = JSON.parse(cleaned);
+        console.log('✅ GEMINI DEBUG - JSON parsed successfully');
+      } catch (parseError) {
+        console.error('❌ GEMINI DEBUG - Initial JSON parsing failed');
+        console.error('- Parse error:', (parseError as Error)?.message);
+        
+        // Recovery attempt: Try to fix truncated JSON
+        console.log('🔄 GEMINI DEBUG - Attempting JSON recovery...');
+        
+        // Find the last complete object by looking for the last valid closing brace
+        const lastCompleteIndex = cleaned.lastIndexOf('}');
+        if (lastCompleteIndex > 0) {
+          const recoveredJson = cleaned.substring(0, lastCompleteIndex + 1);
+          console.log('- Recovery attempt: using first', lastCompleteIndex + 1, 'characters');
+          console.log('- Recovery text preview:', recoveredJson.substring(0, 100) + '...');
+          
+          try {
+            parsed = JSON.parse(recoveredJson);
+            console.log('✅ GEMINI DEBUG - JSON recovery successful');
+          } catch (recoveryError) {
+            console.error('❌ GEMINI DEBUG - JSON recovery also failed');
+            console.error('- Recovery error:', (recoveryError as Error)?.message);
+            console.error('- Failed on text:', responseText.substring(0, 300) + '...');
+            throw new Error(`JSON parsing failed after recovery attempts: ${(parseError as Error)?.message}`);
+          }
+        } else {
+          console.error('- Failed on text:', responseText.substring(0, 300) + '...');
+          throw new Error(`JSON parsing failed: ${(parseError as Error)?.message}`);
+        }
+      }
+      
+      console.log('- Parsed object keys:', Object.keys(parsed));
+      console.log('- Has explanation:', !!parsed.explanation);
+      console.log('- Has composer:', !!parsed.composer);
+      
+      return parsed;
+      
+    } catch (parseError) {
+      console.error('❌ GEMINI DEBUG - Complete parsing failure');
+      console.error('- Parse error:', (parseError as Error)?.message);
+      console.error('- Failed on text:', responseText.substring(0, 200) + '...');
+      throw new Error(`JSON parsing failed: ${(parseError as Error)?.message}`);
+    }
   }
   
   private parseJSONWithRepair(responseText: string): Partial<EnhancedSongResult> {

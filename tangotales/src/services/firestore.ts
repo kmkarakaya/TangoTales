@@ -558,13 +558,24 @@ export const songExistsByTitle = async (title: string): Promise<Song | null> => 
  */
 export const createSongWithAI = async (songTitle: string): Promise<Song | null> => {
   try {
-    console.log(`🤖 User requested AI research for: "${songTitle}"`);
+    console.log(`🤖 FIRESTORE DEBUG - User requested AI research for: "${songTitle}"`);
+    console.log('🤖 FIRESTORE DEBUG - Starting AI generation process');
     
     // Try AI generation first
     try {
+      console.log('📡 FIRESTORE DEBUG - Calling songInformationService.getEnhancedSongInformation');
+      console.log('- Service available:', !!songInformationService);
+      console.log('- Method available:', typeof songInformationService.getEnhancedSongInformation);
+      
       const aiResult = await songInformationService.getEnhancedSongInformation({
         title: songTitle
       });
+      
+      console.log('✅ FIRESTORE DEBUG - AI result received');
+      console.log('- Result type:', typeof aiResult);
+      console.log('- Has explanation:', !!aiResult?.explanation);
+      console.log('- Has metadata:', !!aiResult?.metadata);
+      console.log('- AI quality:', aiResult?.metadata?.aiResponseQuality);
       
       // Create enhanced song with AI data
       const songId = await createEnhancedSong(
@@ -714,13 +725,70 @@ export const updateSongWithEnhancedData = async (
       }
     };
     
+    // Debug: Log the data being sent to Firestore
+    console.log('🔧 FIREBASE DEBUG - Update data being sent:', {
+      songId,
+      dataKeys: Object.keys(updateData),
+      sampleData: {
+        composer: updateData.composer,
+        yearComposed: updateData.yearComposed,
+        themes: updateData.themes,
+        metadata: updateData.metadata
+      }
+    });
+    
+    // Filter out undefined values and invalid data types
+    const cleanUpdateData = Object.fromEntries(
+      Object.entries(updateData).filter(([key, value]) => {
+        if (value === undefined) {
+          console.log(`🧹 FIREBASE DEBUG - Filtering out undefined field: ${key}`);
+          return false;
+        }
+        if (typeof value === 'function') {
+          console.log(`🧹 FIREBASE DEBUG - Filtering out function field: ${key}`);
+          return false;
+        }
+        if (value && typeof value === 'object' && value.constructor === Date) {
+          console.log(`🧹 FIREBASE DEBUG - Converting Date object field: ${key}`);
+          // Convert Date to Firestore Timestamp
+          return true; // We'll handle the conversion below
+        }
+        return true;
+      })
+    );
+    
+    // Convert any Date objects to Firestore Timestamps
+    Object.entries(cleanUpdateData).forEach(([key, value]) => {
+      if (value && typeof value === 'object' && value.constructor === Date) {
+        cleanUpdateData[key] = Timestamp.fromDate(value as Date);
+      }
+    });
+    
+    console.log('✅ FIREBASE DEBUG - Clean update data prepared:', {
+      originalFields: Object.keys(updateData).length,
+      cleanedFields: Object.keys(cleanUpdateData).length,
+      removedCount: Object.keys(updateData).length - Object.keys(cleanUpdateData).length
+    });
+    
     // Update the document in Firestore
-    await updateDoc(doc(db, 'songs', songId), updateData);
+    await updateDoc(doc(db, 'songs', songId), cleanUpdateData);
     
     console.log(`✅ Updated song with enhanced data: ${songId}`);
     
   } catch (error) {
-    console.error('Error updating song with enhanced data:', error);
+    console.error('❌ FIREBASE DEBUG - Error updating song with enhanced data:', error);
+    
+    // Type-safe error logging
+    if (error instanceof Error) {
+      console.error('- Error type:', error.constructor.name);
+      console.error('- Error message:', error.message);
+    }
+    
+    // Check for Firebase-specific error properties
+    if (error && typeof error === 'object' && 'code' in error) {
+      console.error('- Firebase error code:', (error as any).code);
+    }
+    
     throw new Error('Failed to update song with enhanced data');
   }
 };
