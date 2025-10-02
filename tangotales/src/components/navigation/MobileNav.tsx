@@ -64,9 +64,9 @@ export const MobileNav: React.FC<MobileNavProps> = ({ isOpen, onToggle, onClose 
               <div className="glass-card p-4">
                 <h3 className="font-semibold mb-4 text-yellow-400">Links</h3>
                 <div className="space-y-2">
-                  <a href="#" className="block text-white hover:text-yellow-400 transition-colors">About</a>
-                  <a href="#" className="block text-white hover:text-yellow-400 transition-colors">Contact</a>
-                  <a href="https://github.com/kmkarakaya/TangoTales" className="block text-white hover:text-yellow-400 transition-colors">GitHub</a>
+                  <button className="block text-white hover:text-yellow-400 transition-colors text-left w-full">About</button>
+                  <button className="block text-white hover:text-yellow-400 transition-colors text-left w-full">Contact</button>
+                  <a href="https://github.com/kmkarakaya/TangoTales" className="block text-white hover:text-yellow-400 transition-colors" target="_blank" rel="noopener noreferrer">GitHub</a>
                 </div>
               </div>
             </div>

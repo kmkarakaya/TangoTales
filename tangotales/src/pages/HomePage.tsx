@@ -9,6 +9,7 @@ const HomePage: React.FC = () => {
   React.useEffect(() => {
     // Load popular songs on initial mount
     loadPopularSongs(12);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

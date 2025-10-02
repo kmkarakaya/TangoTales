@@ -103,6 +103,7 @@ export const checkSampleDataExists = async (): Promise<boolean> => {
     // You can implement this by searching for one of the sample songs
     // For now, we'll just return false to allow re-population
     return false;
+    // eslint-disable-next-line no-unreachable
   } catch (error) {
     console.error('Error checking sample data:', error);
     return false;

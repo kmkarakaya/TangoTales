@@ -48,11 +48,6 @@ const SearchBar: React.FC<SearchBarProps> = ({
     }
   };
 
-  const handleClear = () => {
-    setLocalQuery('');
-    handleSearchChange('');
-  };
-
   return (
     <div className={`relative w-full max-w-2xl ${className}`}>
       <div className={`
