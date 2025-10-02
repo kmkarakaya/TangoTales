@@ -15,8 +15,9 @@ import {
   DocumentData
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { Song, Rating } from '../types/song';
+import { Song, Rating, SongMetadata } from '../types/song';
 import { songInformationService } from './enhancedGemini';
+import { getSampleSongByTitle, createSongFromSample } from '../utils/sampleSongs';
 
 // Helper function to convert Firestore timestamp to Date
 const convertTimestamp = (timestamp: any): Date => {
@@ -179,9 +180,42 @@ export const searchSongsByTitle = async (searchQuery: string): Promise<Song[]> =
       return enhancedSong ? [enhancedSong] : [];
       
     } catch (aiError) {
-      console.error('AI generation failed, creating basic song entry:', aiError);
+      console.error('AI generation failed, checking sample songs:', aiError);
       
-      // Fallback: Create basic song entry for unknown songs
+      // Try to use sample song data as fallback
+      const sampleData = getSampleSongByTitle(searchQuery);
+      
+      if (sampleData) {
+        console.log(`📋 Using sample data for: "${searchQuery}"`);
+        
+        // Create song ID from title
+        const songId = searchQuery
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, '');
+        
+        // Create complete song from sample data
+        const enhancedSong = createSongFromSample(sampleData, searchQuery, songId);
+        
+        // Convert to Firebase format and save
+        const now = Timestamp.now();
+        const firestoreData = {
+          ...enhancedSong,
+          createdAt: now,
+          lastUpdated: now,
+          metadata: {
+            ...enhancedSong.metadata,
+            lastAIUpdate: now
+          }
+        };
+        
+        await setDoc(doc(db, 'songs', songId), firestoreData);
+        console.log(`✅ Created enhanced song from sample: "${enhancedSong.title}"`);
+        
+        return [enhancedSong];
+      }
+      
+      // Ultimate fallback: Create basic song entry for unknown songs
       const songId = await createEnhancedSong(
         searchQuery,
         {
@@ -358,16 +392,19 @@ export const createEnhancedSong = async (
       .replace(/^-+|-+$/g, '');
 
     const now = Timestamp.now();
+    // Sanitize data to ensure Firebase compatibility (no undefined values)
+    const sanitizeValue = (value: any) => value === undefined ? null : value;
+    
     const enhancedSong = {
       // Primary identification
       title: title,
-      originalTitle: enhancedData.originalTitle,
+      originalTitle: sanitizeValue(enhancedData.originalTitle),
       alternativeTitles: enhancedData.alternativeTitles || [],
       
       // Factual information from AI
       composer: enhancedData.composer || 'Unknown',
-      lyricist: enhancedData.lyricist,
-      yearComposed: enhancedData.yearComposed,
+      lyricist: sanitizeValue(enhancedData.lyricist),
+      yearComposed: sanitizeValue(enhancedData.yearComposed),
       period: enhancedData.period || 'Golden Age',
       musicalForm: enhancedData.musicalForm || 'Tango',
       
@@ -377,8 +414,8 @@ export const createEnhancedSong = async (
       historicalContext: enhancedData.historicalContext || '',
       
       // Musical analysis from AI
-      keySignature: enhancedData.keySignature,
-      tempo: enhancedData.tempo,
+      keySignature: sanitizeValue(enhancedData.keySignature),
+      tempo: sanitizeValue(enhancedData.tempo),
       musicalCharacteristics: enhancedData.musicalCharacteristics || [],
       danceStyle: enhancedData.danceStyle || [],
       
@@ -387,12 +424,12 @@ export const createEnhancedSong = async (
       notablePerformers: enhancedData.notablePerformers || [],
       recommendedForDancing: enhancedData.recommendedForDancing !== undefined ? 
         enhancedData.recommendedForDancing : true,
-      danceRecommendations: enhancedData.danceRecommendations,
+      danceRecommendations: sanitizeValue(enhancedData.danceRecommendations),
       
       // Narrative elements from AI
-      story: enhancedData.story,
-      inspiration: enhancedData.inspiration,
-      personalAnecdotes: enhancedData.personalAnecdotes,
+      story: sanitizeValue(enhancedData.story),
+      inspiration: sanitizeValue(enhancedData.inspiration),
+      personalAnecdotes: sanitizeValue(enhancedData.personalAnecdotes),
       
       // Technical metadata
       explanation: enhancedData.explanation || '',
@@ -406,11 +443,12 @@ export const createEnhancedSong = async (
       
       // AI Quality metadata
       metadata: {
-        aiResponseQuality: metadata.aiResponseQuality,
-        needsManualReview: metadata.needsManualReview,
-        lastAIUpdate: Timestamp.fromDate(metadata.lastAIUpdate),
-        errorReason: metadata.errorReason,
-        retryCount: metadata.retryCount
+        aiResponseQuality: metadata.aiResponseQuality || 'partial',
+        needsManualReview: metadata.needsManualReview || false,
+        lastAIUpdate: metadata.lastAIUpdate instanceof Date ? 
+          Timestamp.fromDate(metadata.lastAIUpdate) : now,
+        errorReason: sanitizeValue(metadata.errorReason),
+        retryCount: metadata.retryCount || 0
       }
     };
 
@@ -602,5 +640,71 @@ export const songExistsByTitle = async (title: string): Promise<Song | null> => 
   } catch (error) {
     console.error('Error checking if song exists:', error);
     throw new Error('Failed to check song existence');
+  }
+};
+
+/**
+ * Update an existing song with enhanced AI-generated data
+ */
+export const updateSongWithEnhancedData = async (
+  songId: string,
+  aiResult: any,
+  metadata: SongMetadata
+): Promise<void> => {
+  try {
+    const now = Timestamp.now();
+    
+    // Prepare the update data with enhanced information
+    const updateData = {
+      // Enhanced factual information
+      composer: aiResult.composer || 'Unknown',
+      lyricist: aiResult.lyricist || undefined,
+      yearComposed: aiResult.yearComposed || undefined,
+      period: aiResult.period || 'Golden Age',
+      musicalForm: aiResult.musicalForm || 'Tango',
+      
+      // Enhanced cultural context
+      themes: aiResult.themes || [],
+      culturalSignificance: aiResult.culturalSignificance || '',
+      historicalContext: aiResult.historicalContext || '',
+      
+      // Enhanced musical analysis
+      keySignature: aiResult.keySignature || undefined,
+      tempo: aiResult.tempo || undefined,
+      musicalCharacteristics: aiResult.musicalCharacteristics || [],
+      danceStyle: aiResult.danceStyle || [],
+      
+      // Enhanced performance information
+      notableRecordings: aiResult.notableRecordings || [],
+      notablePerformers: aiResult.notablePerformers || [],
+      recommendedForDancing: aiResult.recommendedForDancing !== undefined ? aiResult.recommendedForDancing : true,
+      danceRecommendations: aiResult.danceRecommendations || undefined,
+      
+      // Enhanced narrative elements
+      story: aiResult.story || undefined,
+      inspiration: aiResult.inspiration || undefined,
+      
+      // Updated technical fields
+      explanation: aiResult.explanation || '',
+      lastUpdated: now,
+      
+      // Updated metadata
+      metadata: {
+        aiResponseQuality: metadata.aiResponseQuality || 'good',
+        needsManualReview: metadata.needsManualReview || false,
+        lastAIUpdate: now,
+        retryCount: metadata.retryCount || 0,
+        errorReason: metadata.errorReason || undefined
+      }
+    };
+    
+    // Update the document in Firestore
+    await updateDoc(doc(db, 'songs', songId), updateData);
+    
+    console.log(`✅ Updated song with enhanced data: ${songId}`);
+    
+  } catch (error) {
+    console.error('Error updating song with enhanced data:', error);
+    throw new Error('Failed to update song with enhanced data');
   }
 };

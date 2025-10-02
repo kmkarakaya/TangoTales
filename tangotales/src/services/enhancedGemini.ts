@@ -201,22 +201,34 @@ class SongInformationService {
     try {
       return this.parseAndValidateResponse(responseText);
     } catch (error) {
+      console.warn('Initial JSON parse failed, attempting repair:', error);
+      
       // Try to extract JSON from markdown code blocks
       const jsonMatch = responseText.match(/```(?:json)?[\n\r]?([\s\S]*?)[\n\r]?```/);
       if (jsonMatch) {
         try {
           return JSON.parse(jsonMatch[1]);
-        } catch {}
+        } catch (markdownError) {
+          console.warn('Markdown extraction failed:', markdownError);
+        }
       }
       
-      // Try to fix common JSON issues
-      const cleaned = responseText
-        .replace(/^[^{]*/, '') // Remove text before first {
-        .replace(/[^}]*$/, '') // Remove text after last }
-        .replace(/,(\s*[}\]])/g, '$1') // Remove trailing commas
-        .replace(/([{,]\s*)(\w+):/g, '$1"$2":'); // Quote unquoted keys
-      
-      return JSON.parse(cleaned);
+      try {
+        // Try to fix common JSON issues
+        const cleaned = responseText
+          .replace(/^[^{]*/, '') // Remove text before first {
+          .replace(/[^}]*$/, '') // Remove text after last }
+          .replace(/,(\s*[}\]])/g, '$1') // Remove trailing commas
+          .replace(/([{,]\s*)(\w+):/g, '$1"$2":') // Quote unquoted keys
+          .replace(/[\u201C\u201D]/g, '"') // Replace smart quotes
+          .replace(/[\u2018\u2019]/g, "'"); // Replace smart apostrophes
+        
+        return JSON.parse(cleaned);
+      } catch (repairError) {
+        console.error('JSON repair failed:', repairError);
+        console.error('Original response:', responseText.substring(0, 500) + '...');
+        throw new Error(`JSON_PARSE_FAILED: ${repairError instanceof Error ? repairError.message : 'Unknown parsing error'}`);
+      }
     }
   }
   

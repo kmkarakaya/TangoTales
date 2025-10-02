@@ -4,6 +4,105 @@ import { Song } from '../../types/song';
 import { LoadingSpinner, ErrorMessage } from '../common';
 import { EnhancedSongDetail } from '../songs/EnhancedSongDetail';
 
+interface EnhanceWithAIButtonProps {
+  songs: Song[];
+  onEnhancementComplete: () => void;
+  size?: 'small' | 'large';
+}
+
+const EnhanceWithAIButton: React.FC<EnhanceWithAIButtonProps> = ({ 
+  songs, 
+  onEnhancementComplete,
+  size = 'large' 
+}) => {
+  const [isEnhancing, setIsEnhancing] = useState(false);
+  const [enhancementError, setEnhancementError] = useState<string | null>(null);
+  
+  const handleEnhanceWithAI = async () => {
+    if (songs.length === 0) return;
+    
+    setIsEnhancing(true);
+    setEnhancementError(null);
+
+    try {
+      // Import enhanced services dynamically
+      const { songInformationService } = await import('../../services/enhancedGemini');
+      const { updateSongWithEnhancedData } = await import('../../services/firestore');
+      
+      // Process each song
+      for (const song of songs) {
+        try {
+          console.log(`🤖 Enhancing song: "${song.title}"`);
+          
+          // Research the song with enhanced AI
+          const enhancedResult = await songInformationService.getEnhancedSongInformation({ 
+            title: song.title 
+          });
+          
+          // Update the song in the database
+          await updateSongWithEnhancedData(song.id, enhancedResult, {
+            aiResponseQuality: 'good',
+            needsManualReview: false,
+            lastAIUpdate: new Date(),
+            retryCount: 0
+          });
+          
+          console.log(`✅ Enhanced song: "${song.title}"`);
+        } catch (songError) {
+          console.error(`Failed to enhance song "${song.title}":`, songError);
+          // Continue with next song even if one fails
+        }
+      }
+      
+      // Refresh the page to show enhanced results
+      onEnhancementComplete();
+      
+    } catch (error) {
+      console.error('Failed to enhance songs:', error);
+      setEnhancementError(error instanceof Error ? error.message : 'Failed to enhance songs');
+    } finally {
+      setIsEnhancing(false);
+    }
+  };
+
+  const buttonClasses = size === 'small' 
+    ? "px-3 py-1 text-xs rounded"
+    : "px-6 py-3 text-sm rounded-lg";
+    
+  const iconSize = size === 'small' ? '' : 'text-lg';
+
+  return (
+    <div className={size === 'small' ? 'inline-block' : 'space-y-3'}>
+      {enhancementError && (
+        <div className="text-red-600 text-sm">
+          {enhancementError}
+        </div>
+      )}
+      
+      <button 
+        onClick={handleEnhanceWithAI}
+        disabled={isEnhancing}
+        className={`${buttonClasses} font-semibold transition-all duration-200 ${
+          isEnhancing
+            ? 'bg-gray-400 text-white opacity-50 cursor-not-allowed'
+            : 'bg-blue-600 hover:bg-blue-700 text-white hover:scale-105 shadow-lg'
+        }`}
+      >
+        {isEnhancing ? (
+          <>
+            <LoadingSpinner size="sm" className="inline mr-2" />
+            🤖 Enhancing...
+          </>
+        ) : (
+          <>
+            <span className={iconSize}>🤖</span> Enhance with AI
+          </>
+        )}
+      </button>
+    </div>
+  );
+};
+
 interface SearchResultsProps {
   className?: string;
   showPopularOnEmpty?: boolean;
@@ -98,7 +197,23 @@ interface SearchResultsListProps {
   onSongClick: (song: Song) => void;
 }
 
+// Helper function to detect low-quality songs that need AI enhancement
+const isLowQualitySong = (song: Song): boolean => {
+  return (
+    song.composer === 'Unknown' &&
+    (!song.culturalSignificance || 
+     song.culturalSignificance.includes('This tango song is part of the rich Argentine musical tradition.') ||
+     song.culturalSignificance.includes('This is a traditional tango song.')) &&
+    (!song.themes || song.themes.length <= 2) &&
+    (!song.notableRecordings || song.notableRecordings.length === 0) &&
+    (!song.notablePerformers || song.notablePerformers.length === 0)
+  );
+};
+
 const SearchResultsList: React.FC<SearchResultsListProps> = ({ results, query, onSongClick }) => {
+  const lowQualitySongs = results.filter(isLowQualitySong);
+  const hasLowQualitySongs = lowQualitySongs.length > 0;
+
   return (
     <div className="space-y-6">
       {/* Results Header */}
@@ -110,12 +225,32 @@ const SearchResultsList: React.FC<SearchResultsListProps> = ({ results, query, o
           Found {results.length} song{results.length !== 1 ? 's' : ''} 
           {query && ` for "${query}"`}
         </p>
+        
+        {/* Show AI Enhancement Option for Low Quality Songs */}
+        {hasLowQualitySongs && (
+          <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-start space-x-2">
+              <div className="text-blue-600 text-sm">
+                💡 Some results have limited information. 
+              </div>
+            </div>
+            <EnhanceWithAIButton 
+              songs={lowQualitySongs} 
+              onEnhancementComplete={() => window.location.reload()} 
+            />
+          </div>
+        )}
       </div>
 
       {/* Results List */}
       <div className="space-y-4">
         {results.map((song) => (
-          <SongCard key={song.id} song={song} onClick={() => onSongClick(song)} />
+          <SongCard 
+            key={song.id} 
+            song={song} 
+            onClick={() => onSongClick(song)}
+            showEnhanceButton={isLowQualitySong(song)}
+          />
         ))}
       </div>
     </div>
@@ -125,9 +260,10 @@ const SearchResultsList: React.FC<SearchResultsListProps> = ({ results, query, o
 interface SongCardProps {
   song: Song;
   onClick?: () => void;
+  showEnhanceButton?: boolean;
 }
 
-const SongCard: React.FC<SongCardProps> = ({ song, onClick }) => {
+const SongCard: React.FC<SongCardProps> = ({ song, onClick, showEnhanceButton = false }) => {
   // Format date
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('en-US', {
@@ -266,9 +402,18 @@ const SongCard: React.FC<SongCardProps> = ({ song, onClick }) => {
           <span className="text-sm text-gray-500">
             Added {formatDate(song.createdAt)}
           </span>
-          <span className="text-sm text-red-600 font-medium hover:text-red-700">
-            Click for full details →
-          </span>
+          <div className="flex items-center space-x-3">
+            {showEnhanceButton && (
+              <EnhanceWithAIButton 
+                songs={[song]} 
+                onEnhancementComplete={() => window.location.reload()}
+                size="small"
+              />
+            )}
+            <span className="text-sm text-red-600 font-medium hover:text-red-700">
+              Click for full details →
+            </span>
+          </div>
         </div>
       </div>
     </div>
