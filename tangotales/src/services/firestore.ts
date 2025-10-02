@@ -16,6 +16,8 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { Song, Rating, SongMetadata } from '../types/song';
+import { songInformationService } from './enhancedGemini';
+import { getSampleSongByTitle, createSongFromSample } from '../utils/sampleSongs';
 
 // Helper function to convert Firestore timestamp to Date
 const convertTimestamp = (timestamp: any): Date => {

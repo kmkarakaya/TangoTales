@@ -1,5 +1,4 @@
 import { Song } from '../types/song';
-import { Timestamp } from 'firebase/firestore';
 
 /**
  * Sample enhanced songs for testing the UI without AI dependency
