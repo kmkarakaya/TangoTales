@@ -578,8 +578,34 @@ export const createSongWithAI = async (songTitle: string): Promise<Song | null> 
       console.log('- AI quality:', aiResult?.metadata?.aiResponseQuality);
       
       // Create enhanced song with AI data
+      // Use corrected title if available, otherwise use original user input  
+      const finalTitle = (aiResult as any).title || songTitle;
+      console.log(`🏷️ FIRESTORE DEBUG - Using title for database: "${finalTitle}" (original: "${songTitle}")`);
+      
+      // Check if a song with the corrected title already exists
+      if (finalTitle !== songTitle) {
+        console.log(`🔍 FIRESTORE DEBUG - Checking if corrected title "${finalTitle}" already exists in database`);
+        try {
+          const existingSongs = await searchSongsByTitle(finalTitle);
+          // Look for exact title match (case-insensitive)
+          const exactMatch = existingSongs.find((song: Song) => 
+            song.title.toLowerCase() === finalTitle.toLowerCase()
+          );
+          
+          if (exactMatch) {
+            console.log(`✅ FIRESTORE DEBUG - Found existing song with corrected title: "${exactMatch.title}"`);
+            console.log(`📊 FIRESTORE DEBUG - Returning existing song instead of creating duplicate`);
+            return exactMatch;
+          } else {
+            console.log(`🆕 FIRESTORE DEBUG - No existing song found with corrected title, proceeding to create new song`);
+          }
+        } catch (searchError) {
+          console.warn('🚨 FIRESTORE DEBUG - Error searching for existing song, proceeding to create new song:', searchError);
+        }
+      }
+      
       const songId = await createEnhancedSong(
-        songTitle,
+        finalTitle,
         aiResult,
         {
           aiResponseQuality: 'good',
