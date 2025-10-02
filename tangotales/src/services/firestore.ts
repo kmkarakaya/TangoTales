@@ -125,25 +125,30 @@ export const getPopularSongs = async (limitCount: number = 10): Promise<Song[]> 
  */
 export const getSongsByLetter = async (letter: string): Promise<Song[]> => {
   try {
-    const upperLetter = letter.toUpperCase();
-    const lowerLetter = letter.toLowerCase();
+    const targetLetter = letter.toLowerCase();
     
+    // Fetch all songs and filter client-side to handle Unicode characters properly
+    // This approach is consistent with searchSongsByTitle and handles accented characters
     const q = query(
       collection(db, 'songs'),
-      where('title', '>=', upperLetter),
-      where('title', '<', upperLetter + 'z'),
-      orderBy('title'),
-      limit(50)
+      orderBy('title', 'asc')
     );
 
     const querySnapshot = await getDocs(q);
-    const songs = querySnapshot.docs.map(doc => convertSongData(doc.id, doc.data()));
-
-    // Additional client-side filtering for case variations
-    return songs.filter(song => 
-      song.title.toLowerCase().startsWith(lowerLetter) ||
-      song.title.toUpperCase().startsWith(upperLetter)
-    );
+    const allSongs = querySnapshot.docs.map(doc => convertSongData(doc.id, doc.data()));
+    
+    // Filter songs that start with the specified letter (case-insensitive, Unicode-aware)
+    const filteredSongs = allSongs.filter(song => {
+      // Normalize both strings to handle accented characters
+      const normalizedTitle = song.title.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      const normalizedLetter = targetLetter.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      
+      // Check both original and normalized versions
+      return song.title.toLowerCase().startsWith(targetLetter) || 
+             normalizedTitle.startsWith(normalizedLetter);
+    });
+    
+    return filteredSongs.slice(0, 50); // Limit to 50 results
   } catch (error) {
     console.error('Error getting songs by letter:', error);
     throw new Error('Failed to retrieve songs by letter');
