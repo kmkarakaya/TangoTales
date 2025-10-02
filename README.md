@@ -46,7 +46,7 @@ A modern, responsive web application that helps users discover and explore the m
 
 **🎉 LIVE APP**: [https://tangotales-app.web.app](https://tangotales-app.web.app)
 
-**Development Status**: ✅ **Phase 1 Clean Slate Complete!** Successfully implemented AI-powered search with on-demand song generation. Database cleaned of old songs, ready for fresh AI-generated content. Full search functionality, Firebase integration, and automated deployment pipeline active.
+**Development Status**: ✅ **User-Controlled AI Complete!** Successfully implemented user-controlled AI generation with explicit "Search with AI" functionality. No automatic API calls - users choose when to generate content. Cost-efficient approach with full user control. Complete search functionality, Firebase integration, and automated deployment pipeline active.
 
 ```bash
 # Clone and navigate to the React app
@@ -116,18 +116,21 @@ TangoTales features a professional desktop-first interface with emphasis on clar
 - **Keyboard Navigation**: Full Enter key support and clear button functionality
 - **Result Caching**: Avoid redundant database calls for better performance
 - **Popular Songs**: Discover trending songs with one-click access
-- **AI Research**: When songs aren't found, users can research them with Gemini AI
+- **User-Controlled AI Research**: "Search with AI" button for non-existent songs - users choose when to generate content
 
-### 🤖 **AI-Powered Research** ✅ **NEW!**
+### 🤖 **AI-Powered Research** ✅ **USER-CONTROLLED**
 
+- **User-Controlled Generation**: "Search with AI" button appears for non-existent songs - NO automatic AI calls
 - **Gemini AI Integration**: Research unknown tango songs using Google's Gemini 2.0 Flash model
 - **Comprehensive Analysis**: Get detailed information about song meaning, history, and cultural context
+- **Explicit User Choice**: Users decide when to consume AI resources - cost-efficient approach
 - **Auto-Save to Database**: Researched songs are automatically saved for future searches
 - **Instant Results**: See AI-researched songs appear immediately at the top of search results
 - **Rich Content**: Includes title translation, historical context, composer info, and source references
 - **Smart Ordering**: Newly researched songs appear first, maintaining search context
 - **Error Handling**: Graceful fallbacks with retry options for failed research attempts
 - **Secure Configuration**: Environment variables for API keys with GitHub Secrets integration
+- **Cost Optimization**: AI generation only triggered by explicit user action - no surprise API costs
 
 ### 🎭 **Song Discovery** ✅
 
@@ -478,7 +481,7 @@ Your app will be available at `https://your-project-id.web.app`
 **Step 2**: Firebase Firestore Integration ✅  
 **Step 3**: Basic Search Functionality ✅  
 **Step 4**: Song Explanation Display Component � NEXT  
-**Step 5**: Gemini AI API Integration 📋 PLANNED  
+**Step 5**: Gemini AI API Integration ✅ **COMPLETED - USER-CONTROLLED**  
 
 ### Phase 2: Core Features � IN PROGRESS
 
@@ -486,7 +489,7 @@ Your app will be available at `https://your-project-id.web.app`
 - [X] Client-side Firebase SDK integration  
 - [X] Search functionality (database-first with caching)
 - [ ] Enhanced song explanation display with formatting 🔄 NEXT
-- [ ] Gemini AI integration for new song research 📋 PLANNED
+- [X] Gemini AI integration for new song research ✅ **USER-CONTROLLED COMPLETE**
 - [X] Error handling and loading states
 
 ### Phase 3: Discovery Features 📋 PLANNED

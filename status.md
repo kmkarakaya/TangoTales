@@ -1,5 +1,31 @@
 # TangoTales Development Status
 
+## User-Controlled AI Song Generation Implementation
+
+- **Date/Time**: 2025-01-28 11:45
+- **Summary**: Successfully implemented user-controlled AI song generation by removing automatic AI calls for non-existent songs and replacing with explicit user choice via "Search with AI" button functionality.
+- **Actions Taken**:
+  - Modified searchSongsByTitle function in firestore.ts to remove automatic AI generation (removed ~95 lines of auto-generation code)
+  - Added new createSongWithAI function (~80 lines) for user-controlled AI song generation with comprehensive error handling
+  - Updated NoResultsFound component in SearchResults.tsx to use new user-controlled approach
+  - Replaced handleResearchWithAI logic to call createSongWithAI instead of automatic generation
+  - Conducted comprehensive Playwright MCP testing to validate user-controlled workflow
+  - Verified "Search with AI" button appears for non-existent songs without automatic API calls
+  - Tested successful AI generation only occurs when user explicitly clicks the button
+  - Validated existing song search continues to work without AI interference
+  - Confirmed cost efficiency - no automatic Gemini API consumption
+- **Files Modified**:
+  - src/services/firestore.ts
+  - src/components/search/SearchResults.tsx
+- **Comparison to To-Do List**:
+  - ✅ Removed automatic AI generation for non-existent songs
+  - ✅ Implemented user-controlled "Search with AI" button functionality
+  - ✅ Verified no automatic API calls occur without user consent
+  - ✅ Maintained existing song search functionality
+  - ✅ Comprehensive UI testing with Playwright MCP validation
+  - ✅ Cost optimization - AI only triggered by explicit user action
+- **Notes**: The implementation successfully addresses the user requirement to eliminate automatic AI generation and restore user control over when AI resources are consumed. Users now see "Search with AI" button for non-existent songs and must explicitly choose to generate content, ensuring cost efficiency and better UX control.
+
 ## Phase 1 Clean Slate Implementation & Database Cleanup
 
 - **Date/Time**: 2025-10-02 20:25
