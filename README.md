@@ -46,7 +46,7 @@ A modern, responsive web application that helps users discover and explore the m
 
 **🎉 LIVE APP**: [https://tangotales-app.web.app](https://tangotales-app.web.app)
 
-**Development Status**: ✅ **User-Controlled AI Complete!** Successfully implemented user-controlled AI generation with explicit "Search with AI" functionality. No automatic API calls - users choose when to generate content. Cost-efficient approach with full user control. Complete search functionality, Firebase integration, and automated deployment pipeline active.
+**Development Status**: ✅ **Tango Validation System Complete!** Successfully implemented comprehensive tango validation preventing fake songs from polluting the database. Multi-layer protection: Turn 0 AI validation → Database protection → User-friendly error messaging. System rejects non-tango terms like "jazz music" or random words, only allowing legitimate Argentine tango songs (1880-present). Complete search functionality, Firebase integration, and automated deployment pipeline active with database integrity protection.
 
 ```bash
 # Clone and navigate to the React app
@@ -166,6 +166,22 @@ TangoTales features a professional desktop-first interface with emphasis on clar
 - **Routing**: React Router v6
 - **State Management**: React Context API
 - **Testing**: Playwright MCP for end-to-end validation
+- **Database Protection**: Multi-layer tango validation system
+
+### 🛡️ **Database Integrity Protection**
+
+TangoTales features a **comprehensive tango validation system** preventing fake songs from polluting the database:
+
+- **🤖 Turn 0 AI Validation**: Gemini 2.5-Flash validates if search terms are legitimate Argentine tango songs
+- **📊 Database Protection**: Firestore operations refuse to create entries for non-tango searches  
+- **👤 User Education**: Clear error messages guide users to search for actual tango compositions (1880-present)
+- **🚫 Strict Criteria**: Rejects random words, other music genres, and non-Spanish terms unless famous tangos
+- **✅ Verified Protection**: Extensive testing confirms no fake entries created for terms like "jazz music", "yellow flower", etc.
+
+**Example Validation Flow**:
+```
+User searches "jazz music" → Turn 0 detects not a tango → Database creation blocked → User sees educational message
+```
 
 ## � Firebase Integration
 
