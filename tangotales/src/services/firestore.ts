@@ -16,8 +16,6 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { Song, Rating, SongMetadata } from '../types/song';
-import { songInformationService } from './enhancedGemini';
-import { getSampleSongByTitle, createSongFromSample } from '../utils/sampleSongs';
 
 // Helper function to convert Firestore timestamp to Date
 const convertTimestamp = (timestamp: any): Date => {
@@ -152,8 +150,8 @@ export const searchSongsByTitle = async (searchQuery: string): Promise<Song[]> =
       return filteredSongs.slice(0, 10);
     }
 
-    // No songs found - return empty array to show "No Results Found"
-    // User can then choose to search with AI if they want
+    // No songs found - return empty array to allow user-controlled AI generation
+    // The NoResultsFound component will show "Research with AI" button
     return [];
     
   } catch (error) {
