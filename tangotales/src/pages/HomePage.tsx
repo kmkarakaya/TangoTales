@@ -66,9 +66,9 @@ const HomePage: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-yellow-50">
       {/* Header - Unicode search fix deployed */}
       <header className="bg-white shadow-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex items-center justify-center">
+            <div className="text-center">
               <h1 className="text-3xl lg:text-4xl font-bold text-red-700">
                 🎵 TangoTales
               </h1>
@@ -81,7 +81,7 @@ const HomePage: React.FC = () => {
       </header>
 
       {/* Main Content - 3 Column Grid */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="w-full px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Left Sidebar - A-Z Navigation (Desktop Only) */}
           <aside className="hidden lg:block lg:col-span-2">
@@ -164,7 +164,7 @@ const HomePage: React.FC = () => {
 
       {/* Footer */}
       <footer className="bg-white border-t border-gray-200 mt-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
           <p className="text-center text-sm text-gray-600">
             © 2025 TangoTales. Discover the stories behind tango music.
           </p>

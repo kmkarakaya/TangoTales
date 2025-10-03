@@ -429,15 +429,21 @@ export const EnhancedSongDetail: React.FC<EnhancedSongDetailProps> = ({
             )}
 
             {/* Recent Performances */}
-            {(song.currentAvailability as any)?.recentPerformances?.length > 0 && (
+            {(song.currentAvailability as any)?.recentPerformances && (
               <div>
                 <h4 className="text-sm font-medium text-white/80 mb-2">🎭 Recent Performances</h4>
                 <div className="space-y-1">
-                  {(song.currentAvailability as any).recentPerformances.map((performance: string, index: number) => (
-                    <div key={index} className="text-sm text-white/70 bg-white/5 rounded px-3 py-2">
-                      {performance}
+                  {Array.isArray((song.currentAvailability as any).recentPerformances) ? (
+                    (song.currentAvailability as any).recentPerformances.map((performance: string, index: number) => (
+                      <div key={index} className="text-sm text-white/70 bg-white/5 rounded px-3 py-2">
+                        {performance}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-sm text-white/70 bg-white/5 rounded px-3 py-2">
+                      {(song.currentAvailability as any).recentPerformances}
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
             )}
@@ -446,7 +452,7 @@ export const EnhancedSongDetail: React.FC<EnhancedSongDetailProps> = ({
             {!(song.currentAvailability as any)?.streamingPlatforms?.length && 
              !(song.currentAvailability as any)?.purchaseLinks?.length && 
              !(song.currentAvailability as any)?.freeResources?.length && 
-             !(song.currentAvailability as any)?.recentPerformances?.length && (
+             !(song.currentAvailability as any)?.recentPerformances && (
               <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-amber-400">🔍</span>
@@ -596,6 +602,21 @@ export const EnhancedSongDetail: React.FC<EnhancedSongDetailProps> = ({
           </div>,
           true // Always show Research Sources section
         )}
+
+        {/* AI Disclosure */}
+        <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4 text-sm">
+          <div className="flex items-start space-x-2">
+            <div className="text-amber-400 text-lg mt-0.5">🤖</div>
+            <div className="text-amber-200">
+              <div className="font-medium mb-1">AI-Generated Content</div>
+              <div className="text-amber-300/80 text-xs leading-relaxed">
+                This song information has been researched and generated using AI technology and web search results. 
+                While we strive for accuracy, some details may be incomplete or require verification. 
+                We encourage cross-referencing with the provided research sources for scholarly or professional use.
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Metadata Footer */}
         <div className="border-t border-white/20 pt-4 text-xs text-white/50">
