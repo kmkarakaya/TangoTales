@@ -4,3 +4,7 @@ export { default as ErrorBoundary } from './ErrorBoundary';
 export { default as StarRating } from './StarRating';
 export { default as AIResearchProgress } from './AIResearchProgress';
 export { default as ConfidenceBadge } from './ConfidenceBadge';
+export { default as PartialDataIndicator } from './PartialDataIndicator';
+export { default as DataVisualization } from './DataVisualization';
+export { default as AdvancedFilter } from './AdvancedFilter';
+export { default as PerformanceMetrics } from './PerformanceMetrics';
