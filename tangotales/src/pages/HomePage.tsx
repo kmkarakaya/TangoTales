@@ -75,6 +75,17 @@ const HomePage: React.FC = () => {
               <p className="text-gray-600 mt-1">
                 Discover the stories behind classic tango songs
               </p>
+              <p className="text-xs text-gray-500 mt-2">
+                By{' '}
+                <a 
+                  href="https://www.instagram.com/tango_dj_kmk" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-red-600 hover:text-red-700 transition-colors font-medium"
+                >
+                  DJ Murat Karakaya (KMK)
+                </a>
+              </p>
             </div>
           </div>
         </div>
@@ -165,9 +176,22 @@ const HomePage: React.FC = () => {
       {/* Footer */}
       <footer className="bg-white border-t border-gray-200 mt-16">
         <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
-          <p className="text-center text-sm text-gray-600">
-            © 2025 TangoTales. Discover the stories behind tango music.
-          </p>
+          <div className="text-center">
+            <p className="text-sm text-gray-600 mb-2">
+              © 2025 TangoTales. Discover the stories behind tango music.
+            </p>
+            <p className="text-xs text-gray-500">
+              Designed & Created by{' '}
+              <a 
+                href="https://www.instagram.com/tango_dj_kmk" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-red-600 hover:text-red-700 transition-colors font-medium"
+              >
+                DJ Murat Karakaya (KMK)
+              </a>
+            </p>
+          </div>
         </div>
       </footer>
     </div>

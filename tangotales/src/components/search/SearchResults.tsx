@@ -634,9 +634,12 @@ const SongCard: React.FC<SongCardProps> = ({ song, onClick, showEnhanceButton = 
       {/* Click to view more */}
       <div className="mt-4 pt-3 border-t border-gray-200">
         <div className="flex justify-between items-center">
-          <span className="text-sm text-gray-500">
+          <div className="text-sm text-gray-500">
             Added {formatDate(song.createdAt)}
-          </span>
+            {song.lastUpdated && song.lastUpdated !== song.createdAt && (
+              <span> • Last Update: {formatDate(song.lastUpdated)}</span>
+            )}
+          </div>
           <div className="flex items-center space-x-3">
             {showEnhanceButton && onEnhance && (
               <button 

@@ -620,13 +620,24 @@ export const EnhancedSongDetail: React.FC<EnhancedSongDetailProps> = ({
 
         {/* Metadata Footer */}
         <div className="border-t border-white/20 pt-4 text-xs text-white/50">
-          <div className="flex justify-between items-center">
-            <div>
-              Searched {song.searchCount} times
-              {song.averageRating > 0 && (
-                <span className="ml-3">
-                  Rating: {song.averageRating.toFixed(1)}/5 ({song.totalRatings} reviews)
-                </span>
+          <div className="flex justify-between items-start">
+            <div className="space-y-1">
+              <div>
+                Searched {song.searchCount} times
+                {song.averageRating > 0 && (
+                  <span className="ml-3">
+                    Rating: {song.averageRating.toFixed(1)}/5 ({song.totalRatings} reviews)
+                  </span>
+                )}
+              </div>
+              {song.lastUpdated && (
+                <div className="text-white/40">
+                  Last Update: {new Date(song.lastUpdated).toLocaleDateString('en-GB', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                  })}
+                </div>
               )}
             </div>
             {song.metadata?.aiResponseQuality && (
