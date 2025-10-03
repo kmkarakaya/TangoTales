@@ -329,11 +329,14 @@ const SongCard: React.FC<SongCardProps> = ({ song, onClick, showEnhanceButton = 
   const [submittingRating, setSubmittingRating] = useState(false);
   const [localRating, setLocalRating] = useState(song.averageRating || 0);
   const [localTotalRatings, setLocalTotalRatings] = useState(song.totalRatings || 0);
+  const [ratingError, setRatingError] = useState<string | null>(null);
 
   const handleRating = async (rating: number) => {
     if (submittingRating) return; // Prevent double-submission
     
     setSubmittingRating(true);
+    setRatingError(null);
+    
     try {
       await addRating({
         songId: song.id,
@@ -350,7 +353,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, onClick, showEnhanceButton = 
       
     } catch (error) {
       console.error('Rating submission failed:', error);
-      // Simple error feedback - could show toast notification
+      setRatingError('Failed to submit rating. Please try again.');
     } finally {
       setSubmittingRating(false);
     }
@@ -440,8 +443,15 @@ const SongCard: React.FC<SongCardProps> = ({ song, onClick, showEnhanceButton = 
               readonly={submittingRating}
               size="sm"
               totalRatings={localTotalRatings}
+              showAverage={true}
+              isLoading={submittingRating}
             />
           </div>
+          {ratingError && (
+            <div className="text-red-500 text-xs mt-1">
+              {ratingError}
+            </div>
+          )}
         </div>
       </div>
 
