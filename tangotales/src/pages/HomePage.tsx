@@ -12,7 +12,7 @@ const HomePage: React.FC = () => {
     // Load popular songs on initial mount
     const loadInitialSongs = async () => {
       try {
-        const songs = await getPopularSongs(12);
+        const songs = await getPopularSongs(10);
         setResults(songs);
         // We loaded popular songs for the landing page; do not mark this as a user search
         setHasSearched(false);
@@ -48,7 +48,7 @@ const HomePage: React.FC = () => {
   const handleLoadPopularSongs = React.useCallback(async () => {
     try {
       setLoading(true);
-      const songs = await getPopularSongs(20);
+      const songs = await getPopularSongs(10);
       setResults(songs);
       setQuery('');
       // Loading popular songs is not a text search — keep hasSearched false so the UI shows

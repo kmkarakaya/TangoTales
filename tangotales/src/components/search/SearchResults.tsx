@@ -121,6 +121,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     hasSearched, 
     showNoResults,
     loadPopularSongs,
+    loadMorePopular,
     handleSearchSubmit,
     handleSearchChange
   } = useSearch();
@@ -210,8 +211,8 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     );
   }
 
-  // Show search results
-  if (hasSearched && results.length > 0) {
+  // Show results if we have them (search results or popular list)
+  if (results.length > 0) {
     return (
       <div className={`${className}`}>
         {selectedSong ? (
@@ -229,17 +230,18 @@ const SearchResults: React.FC<SearchResultsProps> = ({
             onSongClick={setSelectedSong}
             onEnhance={handleEnhanceSongInModal}
             enhancingSongId={enhancingSong}
+            onLoadMore={loadMorePopular}
+            currentCount={results.length}
           />
         )}
       </div>
     );
   }
-
-  // Show popular songs when no search has been performed
-  if (!hasSearched && showPopularOnEmpty) {
+  // Show popular songs when no search has been performed AND there are no results to show
+  if (!hasSearched && showPopularOnEmpty && results.length === 0) {
     return (
       <div className={`${className}`}>
-        <PopularSongsSection onLoadPopular={loadPopularSongs} />
+  <PopularSongsSection onLoadPopular={loadPopularSongs} onLoadMore={loadMorePopular} currentCount={results.length} />
       </div>
     );
   }
@@ -253,6 +255,8 @@ interface SearchResultsListProps {
   onSongClick: (song: Song) => void;
   onEnhance?: (song: Song) => void;
   enhancingSongId?: string | null;
+  onLoadMore?: (pageSize?: number) => Promise<void>;
+  currentCount?: number;
 }
 
 // Helper function to detect low-quality songs that need AI enhancement
@@ -268,7 +272,7 @@ const isLowQualitySong = (song: Song): boolean => {
   );
 };
 
-const SearchResultsList: React.FC<SearchResultsListProps> = ({ results, query, onSongClick, onEnhance, enhancingSongId }) => {
+const SearchResultsList: React.FC<SearchResultsListProps> = ({ results, query, onSongClick, onEnhance, enhancingSongId, onLoadMore, currentCount }) => {
   const lowQualitySongs = results.filter(isLowQualitySong);
   const hasLowQualitySongs = lowQualitySongs.length > 0;
 
@@ -321,6 +325,18 @@ const SearchResultsList: React.FC<SearchResultsListProps> = ({ results, query, o
           />
         ))}
       </div>
+
+      {/* Load More Button for Popular Songs (when no search query) */}
+      {!query && onLoadMore && (
+        <div className="bg-white rounded-lg shadow-md p-4 text-center">
+          <button 
+            onClick={() => onLoadMore(10)}
+            className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium shadow-sm transition-all duration-150"
+          >
+            ➕ Load more popular songs
+          </button>
+        </div>
+      )}
     </div>
   );
 };
@@ -467,7 +483,6 @@ const SongCard: React.FC<SongCardProps> = ({ song, onClick, showEnhanceButton = 
       <div className="space-y-3">
         {/* Composer */}
         <div>
-          <span className="font-medium text-gray-700">Composer:</span> 
           <span className="text-gray-600 ml-2">{song.composer}</span>
           {song.lyricist && song.lyricist !== song.composer && (
             <span className="text-gray-600"> • <span className="font-medium">Lyricist:</span> {song.lyricist}</span>
@@ -668,12 +683,13 @@ const NoResultsFound: React.FC<NoResultsFoundProps> = ({ query, onRefreshSearch,
 
 interface PopularSongsSectionProps {
   onLoadPopular: (limit?: number) => Promise<void>;
+  onLoadMore?: (pageSize?: number) => Promise<void>;
+  currentCount?: number;
 }
 
-const PopularSongsSection: React.FC<PopularSongsSectionProps> = ({ onLoadPopular }) => {
-  const handleLoadPopular = () => {
-    onLoadPopular(10);
-  };
+const PopularSongsSection: React.FC<PopularSongsSectionProps> = ({ onLoadPopular, onLoadMore, currentCount = 0 }) => {
+  const handleLoadPopular = () => onLoadPopular(10);
+  const handleLoadMore = () => onLoadMore ? onLoadMore(10) : onLoadPopular(20);
 
   return (
     <div className="bg-white rounded-lg shadow-md p-8 text-center">
@@ -684,12 +700,21 @@ const PopularSongsSection: React.FC<PopularSongsSectionProps> = ({ onLoadPopular
         Start by exploring our most searched tango songs, or use the search bar above to find a specific song.
       </p>
       
-      <button 
-        onClick={handleLoadPopular}
-        className="px-8 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold shadow-lg transition-all duration-200 hover:scale-105"
-      >
-        🎵 Show Popular Songs
-      </button>
+      {currentCount === 0 ? (
+        <button 
+          onClick={handleLoadPopular}
+          className="px-8 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold shadow-lg transition-all duration-200 hover:scale-105"
+        >
+          🎵 Show Popular Songs
+        </button>
+      ) : (
+        <button 
+          onClick={handleLoadMore}
+          className="px-6 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-800 rounded-lg font-medium shadow-sm transition-all duration-150"
+        >
+          ➕ Load more
+        </button>
+      )}
     </div>
   );
 };

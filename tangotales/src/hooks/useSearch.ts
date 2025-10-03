@@ -102,7 +102,8 @@ export const useSearch = () => {
       
       const popular = await getPopularSongs(limit);
       setResults(popular);
-      setHasSearched(true);
+      // This is a browsing action, not a user text search
+      setHasSearched(false);
       setQuery(''); // Clear search query since this isn't a search
     } catch (err) {
       console.error('Error loading popular songs:', err);
@@ -112,6 +113,30 @@ export const useSearch = () => {
       setLoading(false);
     }
   }, [setLoading, setError, setResults, setHasSearched, setQuery]);
+
+  // Load more popular songs by increasing the requested limit cumulatively
+  const loadMorePopular = useCallback(async (pageSize: number = 10) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const currentCount = results.length || 0;
+      const newLimit = currentCount + pageSize;
+
+      const popular = await getPopularSongs(newLimit);
+      setResults(popular);
+      setHasSearched(false);
+      setQuery('');
+    } catch (err) {
+      console.error('Error loading more popular songs:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load popular songs');
+    } finally {
+      setLoading(false);
+    }
+  }, [results, setLoading, setError, setResults, setHasSearched, setQuery]);
+
+  // NOTE: loadMorePopular is intentionally exposed for UI components that may
+  // want to trigger incremental loading. It's referenced by SearchResults.
 
   // Get songs by letter
   const loadSongsByLetter = useCallback(async (letter: string) => {
@@ -144,6 +169,7 @@ export const useSearch = () => {
     handleSearchChange,
     handleSearchSubmit,
     loadPopularSongs,
+    loadMorePopular,
     loadSongsByLetter,
     clearSearch,
     
