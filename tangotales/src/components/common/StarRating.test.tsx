@@ -54,4 +54,70 @@ describe('StarRating Component', () => {
     expect(screen.getByLabelText('Rate 1 star')).toBeInTheDocument();
     expect(screen.getByLabelText('Rate 5 stars')).toBeInTheDocument();
   });
+
+  test('displays numeric average when showAverage is true', () => {
+    render(<StarRating rating={4.2} totalRatings={23} showAverage={true} />);
+    expect(screen.getByText('4.2')).toBeInTheDocument();
+    expect(screen.getByText('(23 ratings)')).toBeInTheDocument();
+  });
+
+  test('does not display numeric average when showAverage is false', () => {
+    const { container } = render(<StarRating rating={4.2} totalRatings={23} showAverage={false} />);
+    expect(container.textContent).not.toContain('4.2');
+    expect(screen.getByText('(23 ratings)')).toBeInTheDocument();
+  });
+
+  test('shows loading indicator when isLoading is true', () => {
+    render(<StarRating rating={3} onRate={() => {}} isLoading={true} />);
+    expect(screen.getByText('⏳')).toBeInTheDocument();
+  });
+
+  test('does not allow rating clicks when isLoading', () => {
+    const handleRate = jest.fn();
+    render(<StarRating rating={0} onRate={handleRate} isLoading={true} />);
+    
+    const stars = screen.getAllByRole('button');
+    fireEvent.click(stars[2]);
+    
+    expect(handleRate).not.toHaveBeenCalled();
+  });
+
+  test('displays half stars for decimal ratings', () => {
+    const { container } = render(<StarRating rating={4.3} />);
+    const stars = container.querySelectorAll('button');
+    
+    // First 4 should be full stars
+    expect(stars[0].textContent).toBe('★');
+    expect(stars[1].textContent).toBe('★');
+    expect(stars[2].textContent).toBe('★');
+    expect(stars[3].textContent).toBe('★');
+    
+    // 5th star should be half star
+    expect(stars[4].textContent).toBe('⯨');
+  });
+
+  test('displays correct stars for rating 3.7', () => {
+    const { container } = render(<StarRating rating={3.7} />);
+    const stars = container.querySelectorAll('button');
+    
+    // First 3 should be full stars
+    expect(stars[0].textContent).toBe('★');
+    expect(stars[1].textContent).toBe('★');
+    expect(stars[2].textContent).toBe('★');
+    
+    // 4th star should be half star
+    expect(stars[3].textContent).toBe('⯨');
+    
+    // 5th star should be empty
+    expect(stars[4].textContent).toBe('☆');
+  });
+
+  test('displays all full stars for rating 5.0', () => {
+    const { container } = render(<StarRating rating={5.0} />);
+    const stars = container.querySelectorAll('button');
+    
+    stars.forEach(star => {
+      expect(star.textContent).toBe('★');
+    });
+  });
 });
