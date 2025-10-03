@@ -1,11 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { StarRating } from '../common';
+import { addRating } from '../../services/firestore';
 
 interface SongCardProps {
   title: string;
   rank?: number;
   searchCount?: number;
   averageRating?: number;
+  totalRatings?: number;
+  songId?: string;
   onClick?: () => void;
+  onRatingUpdate?: () => void;
   className?: string;
 }
 
@@ -14,27 +19,43 @@ export const SongCard: React.FC<SongCardProps> = ({
   rank,
   searchCount,
   averageRating,
+  totalRatings,
+  songId,
   onClick,
+  onRatingUpdate,
   className = ""
 }) => {
-  const renderStars = (rating: number) => {
-    const stars = [];
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 !== 0;
+  const [submittingRating, setSubmittingRating] = useState(false);
+  const [localRating, setLocalRating] = useState(averageRating || 0);
+  const [localTotalRatings, setLocalTotalRatings] = useState(totalRatings || 0);
 
-    for (let i = 0; i < fullStars; i++) {
-      stars.push(<span key={i} className="text-yellow-400">⭐</span>);
+  const handleRating = async (rating: number) => {
+    if (submittingRating || !songId) return; // Prevent double-submission
+    
+    setSubmittingRating(true);
+    try {
+      await addRating({
+        songId: songId,
+        rating,
+      });
+      
+      // Optimistic update (immediate UI feedback)
+      const newTotal = localTotalRatings + 1;
+      const newAverage = ((localRating * localTotalRatings) + rating) / newTotal;
+      
+      // Update local state
+      setLocalRating(newAverage);
+      setLocalTotalRatings(newTotal);
+      
+      // Trigger parent refresh for consistency
+      onRatingUpdate?.();
+      
+    } catch (error) {
+      console.error('Rating submission failed:', error);
+      // Simple error feedback - could show toast notification
+    } finally {
+      setSubmittingRating(false);
     }
-
-    if (hasHalfStar) {
-      stars.push(<span key="half" className="text-yellow-400">⭐</span>);
-    }
-
-    while (stars.length < 5) {
-      stars.push(<span key={stars.length} className="text-white/20">⭐</span>);
-    }
-
-    return stars;
   };
 
   return (
@@ -59,12 +80,15 @@ export const SongCard: React.FC<SongCardProps> = ({
           </div>
           
           <div className="flex items-center space-x-4 text-sm">
-            {averageRating && (
-              <div className="flex items-center space-x-1">
-                <div className="flex">
-                  {renderStars(averageRating)}
-                </div>
-                <span className="text-white/60">({averageRating.toFixed(1)})</span>
+            {(localRating > 0 || songId) && (
+              <div className="flex items-center space-x-1" onClick={(e) => e.stopPropagation()}>
+                <StarRating 
+                  rating={localRating}
+                  onRate={songId ? handleRating : undefined}
+                  readonly={!songId || submittingRating}
+                  size="sm"
+                  totalRatings={localTotalRatings}
+                />
               </div>
             )}
             
