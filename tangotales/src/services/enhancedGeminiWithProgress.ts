@@ -203,6 +203,7 @@ class SongInformationService {
 - Look for official recordings, sheet music, or tango repertoire lists
 - Check against famous tango collections and historical records
 - Verify spelling variations and alternative titles
+- IMPORTANT: Record the exact URLs and website names where you find verification
 
 Respond ONLY with this JSON:
 {
@@ -210,8 +211,7 @@ Respond ONLY with this JSON:
   "confidence": "high" | "medium" | "low" | "not_found",
   "alternativeSpellings": ["verified alternative spelling 1", "alternative 2"] or null,
   "isKnownTango": true | false,
-  "searchVerified": true | false,
-  "foundInSources": ["source1", "source2"] or null
+  "searchVerified": true | false
 }
 
 VALIDATION CRITERIA:
@@ -292,18 +292,25 @@ EXAMPLES TO REJECT: "yellow flower", "sarı çiçek", "hello world", "rock music
 - Look for biographical information about the creators
 - Check multiple sources for accuracy (discographies, music archives, tango history sites)
 - Verify the musical form (tango, vals, milonga) through search
+- IMPORTANT: Record the exact URLs and website names of your sources
 
 {
   "composer": "composer full name verified through search or Unknown",
   "lyricist": "lyricist name verified through search or null", 
   "yearComposed": year_number_verified_through_search_or_null,
-  "period": "Pre-Golden Age" | "Golden Age" | "Post-Golden Age" | "Contemporary",
+  "period": "Pre-Golden Age / Guardia Vieja & Guardia Nueva" | "Golden Age / Época de Oro" | "Post-Golden Age / Post-Época de Oro" | "Nuevo / Tango Nuevo" | "Contemporary / Contemporáneo",
   "musicalForm": "Tango" | "Vals" | "Milonga",
   "searchVerified": true | false,
-  "sources": ["source1", "source2"] or null
+  "sources": [
+    {
+      "title": "website or source name",
+      "url": "exact URL found",
+      "type": "database" | "archive" | "encyclopedia" | "discography" | "academic" | "other"
+    }
+  ] or null
 }
 
-Periods: Pre-Golden Age (1880-1916), Golden Age (1916-1955), Post-Golden Age (1955-1980), Contemporary (1980+)`;
+Periods: Pre-Golden Age / Guardia Vieja & Guardia Nueva (1880-1935), Golden Age / Época de Oro (1935-1955), Post-Golden Age / Post-Época de Oro (1955-1980), Nuevo / Tango Nuevo (1980-1990s), Contemporary / Contemporáneo (2000s+)`;
       
       const basicResponse = await chat.sendMessage({ message: basicPrompt });
       console.log('📥 Turn 1 response:', basicResponse.text?.length || 0, 'chars');
@@ -337,6 +344,7 @@ Periods: Pre-Golden Age (1880-1916), Golden Age (1916-1955), Post-Golden Age (19
 - Look for historical context about when and why it was written
 - Find information about its themes and lyrical content
 - Check tango history sites and cultural archives
+- IMPORTANT: Record the exact URLs and website names where you find cultural information
 
 {
   "themes": ["theme1", "theme2", "theme3"],
@@ -345,7 +353,15 @@ Periods: Pre-Golden Age (1880-1916), Golden Age (1916-1955), Post-Golden Age (19
   "searchFindings": {
     "culturalImpact": "impact_found_in_search" or null,
     "historicalEvents": "related_historical_events_found" or null
-  }
+  },
+  "culturalSources": [
+    {
+      "title": "website or source name",
+      "url": "exact URL where cultural info was found",
+      "type": "encyclopedia" | "academic" | "cultural_site" | "history" | "biography" | "other",
+      "content": "brief description of cultural information found"
+    }
+  ] or null
 }
 
 Keep descriptions concise (1-2 sentences each).`;
@@ -430,8 +446,8 @@ Keep descriptions concise (1-2 sentences each).`;
 - Search for recordings on music platforms (Spotify, Apple Music, YouTube)
 - Look for historical recordings in tango archives and discographies
 - Find recent performances and contemporary interpretations
-- Search for notable performers and orchestras who have recorded this tango
 - Check for album information and release years
+- IMPORTANT: Record the exact URLs and website names where you find recording information
 
 {
   "notableRecordings": [
@@ -443,21 +459,21 @@ Keep descriptions concise (1-2 sentences each).`;
       "availability": "currently_available" | "historical" | "unknown"
     }
   ],
-  "notablePerformers": [
-    {
-      "name": "performer_name_found_in_search",
-      "role": "Orchestra Leader" | "Singer" | "Instrumentalist" | "Dancer",
-      "period": "Golden Age" | "Post-Golden Age" | "Contemporary",
-      "recentActivity": "recent_performances_or_recordings_found" or null
-    }
-  ],
   "currentAvailability": {
     "streamingPlatforms": ["platform1", "platform2"] or null,
     "recentPerformances": ["event1", "event2"] or null
-  }
+  },
+  "recordingSources": [
+    {
+      "title": "website or platform name",
+      "url": "exact URL where recording info was found",
+      "type": "streaming_platform" | "discography" | "archive" | "music_database" | "other",
+      "content": "brief description of what was found"
+    }
+  ] or null
 }
 
-Prioritize current/recent recordings found through search. Limit to 3-5 most significant recordings and performers.`;
+Prioritize current/recent recordings found through search. Limit to 3-5 most significant recordings.`;
       
       const recordingResponse = await chat.sendMessage({ message: recordingPrompt });
       console.log('📥 Turn 4 response:', recordingResponse.text?.length || 0, 'chars');
