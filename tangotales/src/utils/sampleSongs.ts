@@ -21,20 +21,21 @@ export const sampleEnhancedSongs: Partial<Song>[] = [
     tempo: "Moderato",
     musicalCharacteristics: ["distinctive melody", "minor key modulations", "traditional 2/4 rhythm", "dramatic crescendos"],
     danceStyle: ["classic tango", "dramatic pauses", "intricate footwork", "close embrace"],
-    notableRecordings: [
-      {
-        artist: "Carlos Gardel",
-        orchestra: undefined,
-        year: 1924,
-        significance: "The definitive vocal interpretation that popularized the song worldwide"
-      },
-      {
-        artist: "Juan D'Arienzo",
-        orchestra: "Orquesta Juan D'Arienzo",
-        year: 1937,
-        significance: "The rhythmic interpretation that became the standard for dancers"
-      }
-    ],
+    notableRecordings: {
+      recordings: [
+        {
+          artist: "Carlos Gardel",
+          year: "1924",
+          significance: "The definitive vocal interpretation that popularized the song worldwide"
+        },
+        {
+          artist: "Juan D'Arienzo",
+          year: "1937",
+          significance: "The rhythmic interpretation that became the standard for dancers"
+        }
+      ],
+      searchFindings: []
+    },
     notablePerformers: [
       {
         name: "Carlos Gardel",
@@ -71,14 +72,16 @@ export const sampleEnhancedSongs: Partial<Song>[] = [
     tempo: "Andante moderato",
     musicalCharacteristics: ["syncopated rhythm", "passionate melody", "accordion-style phrasing", "characteristic tango rhythm"],
     danceStyle: ["sensual", "close embrace", "traditional tango", "smooth walking"],
-    notableRecordings: [
-      {
-        artist: "Francisco Canaro",
-        orchestra: "Orquesta Francisco Canaro",
-        year: 1926,
-        significance: "Classic orchestral arrangement that defined the song's structure"
-      }
-    ],
+    notableRecordings: {
+      recordings: [
+        {
+          artist: "Francisco Canaro",
+          year: "1926",
+          significance: "Classic orchestral arrangement that defined the song's structure"
+        }
+      ],
+      searchFindings: []
+    },
     notablePerformers: [
       {
         name: "Francisco Canaro",
@@ -139,7 +142,7 @@ export const createSongFromSample = (sampleData: Partial<Song>, title: string, s
     musicalCharacteristics: sampleData.musicalCharacteristics || [],
     danceStyle: sampleData.danceStyle || [],
     
-    notableRecordings: sampleData.notableRecordings || [],
+    notableRecordings: sampleData.notableRecordings,
     notablePerformers: sampleData.notablePerformers || [],
     recommendedForDancing: sampleData.recommendedForDancing !== undefined ? sampleData.recommendedForDancing : true,
     danceRecommendations: sampleData.danceRecommendations || undefined,

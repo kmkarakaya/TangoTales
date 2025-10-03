@@ -57,7 +57,6 @@ const convertSongData = (id: string, data: DocumentData): Song => ({
   danceStyle: data.danceStyle || [],
   
   // Performance information
-  notableRecordings: data.notableRecordings || [],
   notablePerformers: data.notablePerformers || [],
   recommendedForDancing: data.recommendedForDancing !== undefined ? data.recommendedForDancing : true,
   danceRecommendations: data.danceRecommendations,
@@ -76,6 +75,20 @@ const convertSongData = (id: string, data: DocumentData): Song => ({
   tags: data.tags || [],
   createdAt: convertTimestamp(data.createdAt),
   lastUpdated: convertTimestamp(data.lastUpdated || data.createdAt),
+  
+  // New comprehensive research data fields
+  titleValidation: data.titleValidation,
+  basicInfo: data.basicInfo,
+  culturalContext: data.culturalContext,
+  musicalAnalysis: data.musicalAnalysis,
+  notableRecordings: data.notableRecordings,
+  currentAvailability: data.currentAvailability,
+  
+  // Research metadata
+  researchCompleted: data.researchCompleted || false,
+  researchPhases: data.researchPhases || [],
+  lastResearchUpdate: data.lastResearchUpdate ? convertTimestamp(data.lastResearchUpdate) : undefined,
+  allSearchFindings: data.allSearchFindings || [],
   
   // Quality assurance metadata
   metadata: data.metadata ? {
@@ -863,4 +876,75 @@ export const updateSongWithEnhancedData = async (
     
     throw new Error('Failed to update song with enhanced data');
   }
+};
+
+/**
+ * Update song with research data from a specific phase
+ */
+export const updateSongWithResearchData = async (
+  songId: string,
+  phaseData: {
+    phase: string;
+    data: any;
+  }
+): Promise<void> => {
+  try {
+    const songRef = doc(db, 'songs', songId);
+    const updateField = getPhaseFieldName(phaseData.phase);
+    
+    const updateData: any = {
+      [updateField]: phaseData.data,
+      lastUpdated: Timestamp.now(),
+      lastResearchUpdate: Timestamp.now()
+    };
+
+    // Add phase to researchPhases array if not already present
+    if (phaseData.phase !== 'phase0') {
+      updateData.researchPhases = [...(phaseData.data.researchPhases || []), phaseData.phase].filter((phase, index, arr) => arr.indexOf(phase) === index);
+    }
+
+    // Add search findings to allSearchFindings array
+    if (phaseData.data.searchFindings && Array.isArray(phaseData.data.searchFindings)) {
+      updateData.allSearchFindings = [...(phaseData.data.allSearchFindings || []), ...phaseData.data.searchFindings];
+    }
+
+    await updateDoc(songRef, updateData);
+    console.log(`✅ Updated song ${songId} with ${phaseData.phase} research data`);
+  } catch (error) {
+    console.error(`❌ Failed to update song ${songId} with ${phaseData.phase} data:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Mark research as complete for a song
+ */
+export const markResearchComplete = async (songId: string): Promise<void> => {
+  try {
+    const songRef = doc(db, 'songs', songId);
+    await updateDoc(songRef, {
+      researchCompleted: true,
+      lastResearchUpdate: Timestamp.now(),
+      lastUpdated: Timestamp.now()
+    });
+    console.log(`✅ Marked research complete for song ${songId}`);
+  } catch (error) {
+    console.error(`❌ Failed to mark research complete for song ${songId}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Get the Firestore field name for a research phase
+ */
+const getPhaseFieldName = (phase: string): string => {
+  const phaseMap: { [key: string]: string } = {
+    'phase1': 'titleValidation',
+    'phase2': 'basicInfo',
+    'phase3': 'culturalContext',
+    'phase4': 'musicalAnalysis',
+    'phase5': 'notableRecordings',
+    'phase6': 'currentAvailability'
+  };
+  return phaseMap[phase] || phase;
 };

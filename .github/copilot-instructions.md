@@ -89,21 +89,67 @@ interface Rating {
 
 - `mcp_context7_resolve-library-id` + `mcp_context7_get-library-docs`
 - Use for React, Firebase, Tailwind CSS documentation
+- Essential for understanding current patterns and best practices
 
-### Firebase MCP
+### Firebase MCP - PRIMARY DATABASE TOOL
 
-- Activate with `activate_firebase_firebase_tools` and `activate_firebase_firestore_tools`
-- Use for project setup, Firestore operations, deployment
+**MANDATORY Usage**: All database operations MUST use Firebase MCP tools
+
+#### Core Firebase Tools
+- `activate_firebase_firebase_tools` - Project management, authentication, deployment  
+- `activate_firebase_firestore_tools` - Database operations, queries, rules management
+- `activate_firebase_realtimedatabase_tools` - Real-time data sync (if needed)
+- `activate_firebase_storage_tools` - File storage operations
+- `activate_firebase_authentication_tools` - User management
+
+#### Implementation Requirements
+```typescript
+// Always activate Firebase tools before database operations
+await activate_firebase_firebase_tools();
+await activate_firebase_firestore_tools();
+
+// Use for:
+// - Schema validation and updates
+// - Security rules testing and deployment  
+// - Data migration scripts
+// - Query optimization and testing
+// - Real-time listener setup
+// - Performance monitoring
+```
+
+### Playwright Browser Testing - PRIMARY TESTING TOOL
+
+**MANDATORY Usage**: All UI testing MUST use Playwright MCP tools
+
+#### Core Playwright Tools
+- `activate_playwright_browser_navigation` - Page navigation and routing
+- `activate_playwright_browser_interaction` - User interactions (click, type, hover)
+- `activate_playwright_browser_screenshots_and_snapshots` - Visual documentation
+- `activate_playwright_browser_waiting` - Async operation handling
+- `activate_playwright_browser_evaluation` - JavaScript execution and debugging
+- `activate_playwright_browser_window_management` - Tab and viewport management
+- `activate_playwright_browser_console_and_network` - Debugging and monitoring
+
+#### Testing Workflow Requirements
+```typescript
+// Activate all necessary Playwright tools at start
+await activate_playwright_browser_navigation();
+await activate_playwright_browser_interaction();
+await activate_playwright_browser_screenshots_and_snapshots();
+
+// Standard testing pattern:
+// 1. Navigate to localhost:3001
+// 2. Test component functionality
+// 3. Validate responsive design (3+ viewports)
+// 4. Capture screenshots for documentation
+// 5. Test error scenarios and edge cases
+```
 
 ### GitHub MCP
 
 - Repository operations, PR management, issue tracking
 - Activate appropriate categories as needed
-
-### Playwright Browser Testing
-
-- UI testing, responsive design validation
-- Activate with `activate_playwright_*` functions
+- Use for deployment coordination and version control
 
 ## Development Priorities
 
@@ -128,6 +174,61 @@ interface Rating {
 - Verify AI-generated content displays correctly
 - Check responsive design on mobile/tablet viewports
 - Test error states and loading indicators
+
+## MCP Integration Patterns
+
+### Firebase Integration Workflow
+```typescript
+// ALWAYS start with Firebase tool activation
+await activate_firebase_firebase_tools();
+await activate_firebase_firestore_tools();
+
+// Pattern for database schema updates:
+// 1. Create/update TypeScript interfaces
+// 2. Use Firebase MCP to validate Firestore rules
+// 3. Test schema changes with sample data
+// 4. Deploy rules and migration scripts
+// 5. Validate with real data operations
+```
+
+### Playwright Testing Workflow  
+```typescript
+// ALWAYS activate required Playwright tools
+await activate_playwright_browser_navigation();
+await activate_playwright_browser_interaction();
+await activate_playwright_browser_screenshots_and_snapshots();
+await activate_playwright_browser_waiting();
+
+// Pattern for component testing:
+// 1. Navigate to development server
+// 2. Test component rendering and functionality
+// 3. Validate responsive design (mobile/tablet/desktop)
+// 4. Capture screenshots for documentation
+// 5. Test error states and edge cases
+// 6. Validate accessibility features
+```
+
+### Implementation Standards
+
+#### Database Operations
+- **NEVER** use direct Firebase SDK calls without Firebase MCP validation
+- **ALWAYS** test security rules through Firebase MCP before deployment
+- **REQUIRED** use Firebase MCP for all schema changes and migrations
+- **MANDATORY** validate query performance through Firebase MCP tools
+
+#### UI Development  
+- **NEVER** deploy UI changes without Playwright MCP testing
+- **ALWAYS** test responsive design on 3+ viewport sizes
+- **REQUIRED** capture component screenshots for documentation
+- **MANDATORY** test keyboard navigation and accessibility
+
+#### Quality Gates
+Before any code commit:
+- [ ] Firebase MCP validation completed for database changes
+- [ ] Playwright MCP testing completed for UI changes  
+- [ ] Screenshots captured for new/modified components
+- [ ] Responsive design validated on multiple viewports
+- [ ] Error handling tested through both MCP tools
 
 ## Terminal Commands
 

@@ -3,3 +3,4 @@ export { default as ErrorMessage } from './ErrorMessage';
 export { default as ErrorBoundary } from './ErrorBoundary';
 export { default as StarRating } from './StarRating';
 export { default as AIResearchProgress } from './AIResearchProgress';
+export { default as ConfidenceBadge } from './ConfidenceBadge';

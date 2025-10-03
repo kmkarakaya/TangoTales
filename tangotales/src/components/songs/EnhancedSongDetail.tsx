@@ -1,5 +1,5 @@
 import React from 'react';
-import { Song, Recording, Performer } from '../../types/song';
+import { Song, Performer } from '../../types/song';
 
 interface EnhancedSongDetailProps {
   song: Song;
@@ -16,11 +16,11 @@ export const EnhancedSongDetail: React.FC<EnhancedSongDetailProps> = ({
   isEnhancing = false,
   className = ""
 }) => {
-  const renderRecording = (recording: Recording, index: number) => (
+  const renderRecording = (recording: any, index: number) => (
     <div key={index} className="bg-white/5 rounded-lg p-3 border border-white/10">
       <div className="font-medium text-white/90">{recording.artist}</div>
-      {recording.orchestra && (
-        <div className="text-sm text-white/70">{recording.orchestra}</div>
+      {recording.label && (
+        <div className="text-sm text-white/70">{recording.label}</div>
       )}
       {recording.year && (
         <div className="text-sm text-white/60">{recording.year}</div>
@@ -259,9 +259,9 @@ export const EnhancedSongDetail: React.FC<EnhancedSongDetailProps> = ({
         {renderSection(
           "Notable Recordings",
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {song.notableRecordings.map(renderRecording)}
+            {song.notableRecordings?.recordings?.map(renderRecording)}
           </div>,
-          song.notableRecordings.length > 0
+          (song.notableRecordings?.recordings?.length || 0) > 0
         )}
 
         {/* Notable Performers */}

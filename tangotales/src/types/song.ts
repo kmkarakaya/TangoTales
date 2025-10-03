@@ -1,3 +1,73 @@
+// New research data interfaces for enhanced AI pipeline
+export interface SearchSource {
+  url: string;
+  title: string;
+  snippet: string;
+  searchQuery: string;
+}
+
+export interface SearchFindings {
+  phase: string;
+  query: string;
+  sources: SearchSource[];
+  findings: string;
+  confidence: 'high' | 'medium' | 'low';
+}
+
+export interface TitleValidation {
+  isValid: boolean;
+  confidence: 'high' | 'medium' | 'low';
+  alternativeTitles: string[];
+  searchFindings: SearchFindings[];
+}
+
+export interface BasicInfo {
+  composers: string[];
+  lyricists: string[];
+  yearComposed: string;
+  period: string;
+  originalKey: string;
+  searchFindings: SearchFindings[];
+}
+
+export interface CulturalContext {
+  historicalContext: string;
+  culturalSignificance: string;
+  socialContext: string;
+  geographicalOrigins: string[];
+  searchFindings: SearchFindings[];
+}
+
+export interface MusicalAnalysis {
+  musicalForm: string;
+  rhythmicCharacteristics: string;
+  harmonicStructure: string;
+  melodicFeatures: string;
+  instrumentationNotes: string;
+  searchFindings: SearchFindings[];
+}
+
+export interface EnhancedRecording {
+  artist: string;
+  year: string;
+  label?: string;
+  notes?: string;
+  significance?: string;
+  availability?: string;
+}
+
+export interface NotableRecordings {
+  recordings: EnhancedRecording[];
+  searchFindings: SearchFindings[];
+}
+
+export interface CurrentAvailability {
+  streamingPlatforms: string[];
+  purchaseLinks: string[];
+  freeResources: string[];
+  searchFindings: SearchFindings[];
+}
+
 export interface Song {
   // Primary identification
   id: string;
@@ -24,7 +94,6 @@ export interface Song {
   danceStyle: string[];
   
   // Performance information
-  notableRecordings: Recording[];
   notablePerformers: Performer[];
   recommendedForDancing: boolean;
   danceRecommendations?: string;
@@ -43,6 +112,20 @@ export interface Song {
   tags: string[];
   createdAt: Date;
   lastUpdated: Date;
+  
+  // New comprehensive research data fields
+  titleValidation?: TitleValidation;
+  basicInfo?: BasicInfo;
+  culturalContext?: CulturalContext;
+  musicalAnalysis?: MusicalAnalysis;
+  notableRecordings?: NotableRecordings;
+  currentAvailability?: CurrentAvailability;
+  
+  // Research metadata
+  researchCompleted?: boolean;
+  researchPhases?: string[]; // ['phase0', 'phase1', 'phase2', 'phase3', 'phase4']
+  lastResearchUpdate?: Date;
+  allSearchFindings?: SearchFindings[]; // Aggregated from all phases
   
   // Quality assurance metadata
   metadata?: SongMetadata;

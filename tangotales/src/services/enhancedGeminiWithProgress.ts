@@ -1,5 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
 import { config } from '../utils/config';
+import { updateSongWithResearchData, markResearchComplete } from './firestore';
+import { parsePhaseResponse } from './responseParser';
 
 // Initialize Gemini AI client with error handling
 let ai: GoogleGenAI | null = null;
@@ -17,6 +19,7 @@ try {
 
 export interface EnhancedSongParams {
   title: string;
+  songId?: string; // Optional for database storage integration
 }
 
 export interface Recording {
@@ -146,7 +149,7 @@ class SongInformationService {
       const chat = this.chatSessions.get(sessionKey)!;
       console.log('🔄 GEMINI DEBUG - Starting information gathering with progress tracking');
       
-      return await this.gatherInformationWithChat(chat, params.title, progressCallback);
+      return await this.gatherInformationWithChat(chat, params, progressCallback);
       
     } catch (error) {
       console.error('❌ GEMINI DEBUG - Error in getEnhancedSongInformation:');
@@ -180,23 +183,23 @@ class SongInformationService {
   
   private async gatherInformationWithChat(
     chat: any, 
-    songTitle: string, 
+    params: EnhancedSongParams, 
     progressCallback?: ProgressCallback
   ): Promise<EnhancedSongResult & { metadata: SongMetadata }> {
-    console.log(`📡 GEMINI DEBUG - Starting multi-turn conversation for "${songTitle}"`);
+    console.log(`📡 GEMINI DEBUG - Starting multi-turn conversation for "${params.title}"`);
     
     const startTime = Date.now();
     const songData: Partial<EnhancedSongResult> = {};
     let successfulTurns = 0;
     let failedTurns = 0;
-    let correctedTitle = songTitle;
+    let correctedTitle = params.title;
     
     // Phase 0: Title Correction & Validation
     this.emitProgress(0, PROGRESS_PHASES[0].message, PROGRESS_PHASES[0].icon, false, progressCallback);
     
     try {
       console.log('📤 Turn 0: Title correction and validation');
-      const titleCorrectionPrompt = `TANGO VALIDATION WITH SEARCH: Search for "${songTitle}" to verify if it's a legitimate tango song title from the Argentine tango repertoire (1880-present).
+      const titleCorrectionPrompt = `TANGO VALIDATION WITH SEARCH: Search for "${params.title}" to verify if it's a legitimate tango song title from the Argentine tango repertoire (1880-present).
 
 🔍 SEARCH INSTRUCTIONS:
 - Search for this title in tango databases, discographies, and music archives
@@ -232,30 +235,30 @@ EXAMPLES TO REJECT: "yellow flower", "sarı çiçek", "hello world", "rock music
       
       // Check if this is actually a tango song
       if (!titleData.isKnownTango) {
-        console.log(`❌ VALIDATION FAILED: "${songTitle}" is not recognized as a tango song`);
+        console.log(`❌ VALIDATION FAILED: "${params.title}" is not recognized as a tango song`);
         console.log('- AI confidence:', titleData.confidence);
         console.log('- Suggested alternatives:', titleData.alternativeSpellings);
         
         // Throw specific error for non-tango songs
-        throw new Error(`NOT_A_TANGO_SONG: "${songTitle}" does not appear to be a valid tango song title. Please search for actual tango compositions from the Argentine tango repertoire.`);
+        throw new Error(`NOT_A_TANGO_SONG: "${params.title}" does not appear to be a valid tango song title. Please search for actual tango compositions from the Argentine tango repertoire.`);
       }
       
       // Update the title if correction was found
       if (titleData.correctedTitle && titleData.isKnownTango) {
         correctedTitle = titleData.correctedTitle;
-        console.log(`🔧 Title corrected: "${songTitle}" → "${correctedTitle}"`);
+        console.log(`🔧 Title corrected: "${params.title}" → "${correctedTitle}"`);
       }
       
       // Add title correction info to song data
       Object.assign(songData, {
-        originalUserInput: songTitle,
+        originalUserInput: params.title,
         correctedTitle: correctedTitle,
         titleCorrectionConfidence: titleData.confidence || 'unknown'
       });
       
       successfulTurns++;
       this.emitProgress(0, "✅ Title validated successfully", "✅", true, progressCallback);
-      console.log('✅ Turn 0 successful:', { originalTitle: songTitle, correctedTitle, confidence: titleData.confidence || 'unknown' });
+      console.log('✅ Turn 0 successful:', { originalTitle: params.title, correctedTitle, confidence: titleData.confidence || 'unknown' });
     } catch (error) {
       console.error('❌ Turn 0 failed:', error);
       
@@ -269,10 +272,10 @@ EXAMPLES TO REJECT: "yellow flower", "sarı çiçek", "hello world", "rock music
       failedTurns++;
       this.emitProgress(0, "⚠️ Title validation incomplete", "⚠️", true, progressCallback);
       // Use original title if correction fails (for other types of errors)
-      correctedTitle = songTitle;
+      correctedTitle = params.title;
       Object.assign(songData, {
-        originalUserInput: songTitle,
-        correctedTitle: songTitle,
+        originalUserInput: params.title,
+        correctedTitle: params.title,
         titleCorrectionConfidence: 'failed'
       });
     }
@@ -320,6 +323,20 @@ Periods: Pre-Golden Age / Guardia Vieja & Guardia Nueva (1880-1935), Golden Age 
       successfulTurns++;
       this.emitProgress(1, "✅ Basic information gathered", "✅", true, progressCallback);
       console.log('✅ Turn 1 successful:', Object.keys(basicData));
+      
+      // Store Phase 1 data to database
+      if (params.songId) {
+        try {
+          const processedData = parsePhaseResponse(basicResponse.text, 'basic_info', 'basic_info');
+          await updateSongWithResearchData(params.songId, {
+            phase: 'basic_info',
+            data: processedData
+          });
+          console.log('✅ Phase 1 data stored successfully in database');
+        } catch (storageError) {
+          console.error('❌ Failed to store Phase 1 data:', storageError);
+        }
+      }
     } catch (error) {
       console.error('❌ Turn 1 failed:', error);
       failedTurns++;
@@ -374,6 +391,20 @@ Keep descriptions concise (1-2 sentences each).`;
       successfulTurns++;
       this.emitProgress(2, "✅ Cultural context researched", "✅", true, progressCallback);
       console.log('✅ Turn 2 successful:', Object.keys(culturalData));
+      
+      // Store Phase 2 data to database
+      if (params.songId) {
+        try {
+          const processedData = parsePhaseResponse(culturalResponse.text, 'cultural_context', 'cultural_context');
+          await updateSongWithResearchData(params.songId, {
+            phase: 'cultural_context',
+            data: processedData
+          });
+          console.log('✅ Phase 2 data stored successfully in database');
+        } catch (storageError) {
+          console.error('❌ Failed to store Phase 2 data:', storageError);
+        }
+      }
     } catch (error) {
       console.error('❌ Turn 2 failed:', error);
       failedTurns++;
@@ -407,6 +438,20 @@ Keep descriptions concise (1-2 sentences each).`;
       successfulTurns++;
       this.emitProgress(3, "✅ Musical analysis complete", "✅", true, progressCallback);
       console.log('✅ Turn 3 successful:', Object.keys(musicData));
+      
+      // Store Phase 3 data to database
+      if (params.songId) {
+        try {
+          const processedData = parsePhaseResponse(musicResponse.text, 'musical_analysis', 'musical_analysis');
+          await updateSongWithResearchData(params.songId, {
+            phase: 'musical_analysis',
+            data: processedData
+          });
+          console.log('✅ Phase 3 data stored successfully in database');
+        } catch (storageError) {
+          console.error('❌ Failed to store Phase 3 data:', storageError);
+        }
+      }
     } catch (error) {
       console.error('❌ Turn 3 failed:', error);
       failedTurns++;
@@ -423,11 +468,12 @@ Keep descriptions concise (1-2 sentences each).`;
     // Continue with the remaining phases...
     // This is the first part of the enhanced file with progress tracking
     
-    return this.completeRemainingPhases(chat, correctedTitle, songData, successfulTurns, failedTurns, startTime, progressCallback);
+    return this.completeRemainingPhases(chat, params, correctedTitle, songData, successfulTurns, failedTurns, startTime, progressCallback);
   }
 
   private async completeRemainingPhases(
     chat: any,
+    params: EnhancedSongParams,
     correctedTitle: string,
     songData: Partial<EnhancedSongResult>,
     successfulTurns: number,
@@ -483,6 +529,20 @@ Prioritize current/recent recordings found through search. Limit to 3-5 most sig
       successfulTurns++;
       this.emitProgress(4, "✅ Recordings and performers found", "✅", true, progressCallback);
       console.log('✅ Turn 4 successful:', Object.keys(recordingData));
+      
+      // Store Phase 4 data to database
+      if (params.songId) {
+        try {
+          const processedData = parsePhaseResponse(recordingResponse.text, 'notable_recordings', 'notable_recordings');
+          await updateSongWithResearchData(params.songId, {
+            phase: 'notable_recordings',
+            data: processedData
+          });
+          console.log('✅ Phase 4 data stored successfully in database');
+        } catch (storageError) {
+          console.error('❌ Failed to store Phase 4 data:', storageError);
+        }
+      }
     } catch (error) {
       console.error('❌ Turn 4 failed:', error);
       failedTurns++;
@@ -517,6 +577,22 @@ The explanation should weave together the musical, cultural, and historical aspe
       successfulTurns++;
       this.emitProgress(5, "✅ Research complete!", "🎉", true, progressCallback);
       console.log('✅ Turn 5 successful - comprehensive summary created');
+      
+      // Store Phase 5 data to database and mark research complete
+      if (params.songId) {
+        try {
+          const processedData = parsePhaseResponse(summaryResponse.text, 'current_availability', 'current_availability');
+          await updateSongWithResearchData(params.songId, {
+            phase: 'current_availability',
+            data: processedData
+          });
+          // Mark the research as complete
+          await markResearchComplete(params.songId);
+          console.log('✅ Phase 5 data stored and research marked complete in database');
+        } catch (storageError) {
+          console.error('❌ Failed to store Phase 5 data:', storageError);
+        }
+      }
     } catch (error) {
       console.error('❌ Turn 5 failed:', error);
       failedTurns++;

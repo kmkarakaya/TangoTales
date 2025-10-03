@@ -3,6 +3,7 @@ import { useSearch } from '../../hooks/useSearch';
 import { Song } from '../../types/song';
 import { LoadingSpinner, ErrorMessage, StarRating, AIResearchProgress } from '../common';
 import { EnhancedSongDetail } from '../songs/EnhancedSongDetail';
+import DetailedSongModal from '../songs/DetailedSongModal';
 import { addRating } from '../../services/firestore';
 import type { ProgressUpdate } from '../../services/enhancedGeminiWithProgress';
 
@@ -306,7 +307,7 @@ const isLowQualitySong = (song: Song): boolean => {
      song.culturalSignificance.includes('This tango song is part of the rich Argentine musical tradition.') ||
      song.culturalSignificance.includes('This is a traditional tango song.')) &&
     (!song.themes || song.themes.length <= 2) &&
-    (!song.notableRecordings || song.notableRecordings.length === 0) &&
+    (!song.notableRecordings || !song.notableRecordings.recordings || song.notableRecordings.recordings.length === 0) &&
     (!song.notablePerformers || song.notablePerformers.length === 0)
   );
 };
@@ -410,6 +411,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, onClick, showEnhanceButton = 
   const [localRating, setLocalRating] = useState(song.averageRating || 0);
   const [localTotalRatings, setLocalTotalRatings] = useState(song.totalRatings || 0);
   const [ratingError, setRatingError] = useState<string | null>(null);
+  const [showDetailedModal, setShowDetailedModal] = useState(false);
 
   const handleRating = async (rating: number) => {
     if (submittingRating) return; // Prevent double-submission
@@ -486,11 +488,20 @@ const SongCard: React.FC<SongCardProps> = ({ song, onClick, showEnhanceButton = 
     );
   };
 
+  const handleCardClick = () => {
+    if (onClick) {
+      onClick();
+    } else {
+      setShowDetailedModal(true);
+    }
+  };
+
   return (
-    <div 
-      onClick={onClick}
-      className="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg hover:bg-gray-50 transition-all duration-200 border-l-4 border-red-500"
-    >
+    <>
+      <div 
+        onClick={handleCardClick}
+        className="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg hover:bg-gray-50 transition-all duration-200 border-l-4 border-red-500"
+      >
       {/* Header with Title and Tags */}
       <div className="flex justify-between items-start mb-4">
         <div className="flex-1">
@@ -570,12 +581,12 @@ const SongCard: React.FC<SongCardProps> = ({ song, onClick, showEnhanceButton = 
         )}
 
         {/* Notable Recordings Preview */}
-        {song.notableRecordings && song.notableRecordings.length > 0 && (
+        {song.notableRecordings && song.notableRecordings.recordings && song.notableRecordings.recordings.length > 0 && (
           <div className="flex items-center">
             <span className="font-medium text-gray-700 mr-2">Notable recordings:</span>
             <span className="text-gray-600 text-sm">
-              {song.notableRecordings.slice(0, 2).map(r => r.artist).join(', ')}
-              {song.notableRecordings.length > 2 && ` +${song.notableRecordings.length - 2} more`}
+              {song.notableRecordings.recordings.slice(0, 2).map((r: any) => r.artist).join(', ')}
+              {song.notableRecordings.recordings.length > 2 && ` +${song.notableRecordings.recordings.length - 2} more`}
             </span>
           </div>
         )}
@@ -611,6 +622,16 @@ const SongCard: React.FC<SongCardProps> = ({ song, onClick, showEnhanceButton = 
         </div>
       </div>
     </div>
+
+    {/* Detailed Song Modal */}
+    {showDetailedModal && (
+      <DetailedSongModal
+        song={song}
+        isOpen={showDetailedModal}
+        onClose={() => setShowDetailedModal(false)}
+      />
+    )}
+  </>
   );
 };
 
