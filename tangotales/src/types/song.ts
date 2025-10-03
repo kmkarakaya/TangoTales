@@ -75,6 +75,19 @@ export interface RecordingSource {
   content?: string;
 }
 
+export interface BasicInfoSource {
+  title: string;
+  url: string;
+  type: 'database' | 'archive' | 'encyclopedia' | 'discography' | 'academic' | 'other';
+}
+
+export interface CulturalSource {
+  title: string;
+  url: string;
+  type: 'encyclopedia' | 'academic' | 'cultural_site' | 'history' | 'biography' | 'other';
+  content?: string;
+}
+
 export interface Song {
   // Primary identification
   id: string;
@@ -128,6 +141,8 @@ export interface Song {
   notableRecordings?: NotableRecordings;
   currentAvailability?: CurrentAvailability;
   recordingSources?: RecordingSource[];
+  basicInfoSources?: BasicInfoSource[];
+  culturalSources?: CulturalSource[];
   alternativeSpellings?: string[];
   
   // Research metadata

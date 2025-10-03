@@ -84,6 +84,8 @@ const convertSongData = (id: string, data: DocumentData): Song => ({
   notableRecordings: data.notableRecordings,
   currentAvailability: data.currentAvailability,
   recordingSources: data.recordingSources,
+  basicInfoSources: data.basicInfoSources,
+  culturalSources: data.culturalSources,
   alternativeSpellings: data.alternativeSpellings,
   
   // Research metadata

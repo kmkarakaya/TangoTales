@@ -319,6 +319,14 @@ export const EnhancedSongDetail: React.FC<EnhancedSongDetailProps> = ({
           (song.notableRecordings as any)?.length > 0
         )}
 
+        {/* Full Explanation */}
+        {renderSection(
+          "Overview",
+          <div className="prose prose-invert">
+            <p className="text-white/80 leading-relaxed whitespace-pre-line">{song.explanation}</p>
+          </div>
+        )}
+
         {/* Current Availability & Streaming */}
         {renderSection(
           "Listen Now",
@@ -328,11 +336,38 @@ export const EnhancedSongDetail: React.FC<EnhancedSongDetailProps> = ({
               <div>
                 <h4 className="text-sm font-medium text-white/80 mb-2">🎵 Streaming Platforms</h4>
                 <div className="flex flex-wrap gap-2">
-                  {(song.currentAvailability as any).streamingPlatforms.map((platform: string, index: number) => (
-                    <span key={index} className="px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-sm border border-green-500/30">
-                      {platform}
-                    </span>
-                  ))}
+                  {(song.currentAvailability as any).streamingPlatforms.map((platform: string, index: number) => {
+                    // Generate search URLs for each platform
+                    const searchQuery = encodeURIComponent(`${song.title} tango`);
+                    const getSearchUrl = (platformName: string) => {
+                      switch (platformName.toLowerCase()) {
+                        case 'spotify':
+                          return `https://open.spotify.com/search/${searchQuery}`;
+                        case 'apple music':
+                          return `https://music.apple.com/search?term=${searchQuery}`;
+                        case 'youtube':
+                        case 'youtube music':
+                          return `https://www.youtube.com/results?search_query=${searchQuery}`;
+                        case 'amazon music':
+                          return `https://music.amazon.com/search/${searchQuery}`;
+                        default:
+                          return `https://www.google.com/search?q=${searchQuery}+${encodeURIComponent(platformName)}`;
+                      }
+                    };
+
+                    return (
+                      <a
+                        key={index}
+                        href={getSearchUrl(platform)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-sm border border-green-500/30 hover:bg-green-500/30 hover:text-green-300 transition-colors cursor-pointer"
+                        title={`Search for "${song.title}" on ${platform}`}
+                      >
+                        {platform}
+                      </a>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -342,11 +377,25 @@ export const EnhancedSongDetail: React.FC<EnhancedSongDetailProps> = ({
               <div>
                 <h4 className="text-sm font-medium text-white/80 mb-2">💰 Purchase Options</h4>
                 <div className="flex flex-wrap gap-2">
-                  {(song.currentAvailability as any).purchaseLinks.map((link: string, index: number) => (
-                    <span key={index} className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-full text-sm border border-blue-500/30">
-                      {link}
-                    </span>
-                  ))}
+                  {(song.currentAvailability as any).purchaseLinks.map((link: string, index: number) => {
+                    // Check if it's already a URL or just a platform name
+                    const isUrl = link.startsWith('http');
+                    const href = isUrl ? link : `https://www.google.com/search?q=${encodeURIComponent(`${song.title} tango buy ${link}`)}`;
+                    const displayText = isUrl ? new URL(link).hostname.replace('www.', '') : link;
+                    
+                    return (
+                      <a
+                        key={index}
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-full text-sm border border-blue-500/30 hover:bg-blue-500/30 hover:text-blue-300 transition-colors cursor-pointer"
+                        title={isUrl ? `Visit ${displayText}` : `Search to buy "${song.title}" on ${link}`}
+                      >
+                        {displayText}
+                      </a>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -356,11 +405,25 @@ export const EnhancedSongDetail: React.FC<EnhancedSongDetailProps> = ({
               <div>
                 <h4 className="text-sm font-medium text-white/80 mb-2">🆓 Free Resources</h4>
                 <div className="flex flex-wrap gap-2">
-                  {(song.currentAvailability as any).freeResources.map((resource: string, index: number) => (
-                    <span key={index} className="px-3 py-1 bg-purple-500/20 text-purple-400 rounded-full text-sm border border-purple-500/30">
-                      {resource}
-                    </span>
-                  ))}
+                  {(song.currentAvailability as any).freeResources.map((resource: string, index: number) => {
+                    // Check if it's already a URL or just a platform name
+                    const isUrl = resource.startsWith('http');
+                    const href = isUrl ? resource : `https://www.google.com/search?q=${encodeURIComponent(`${song.title} tango free ${resource}`)}`;
+                    const displayText = isUrl ? new URL(resource).hostname.replace('www.', '') : resource;
+                    
+                    return (
+                      <a
+                        key={index}
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1 bg-purple-500/20 text-purple-400 rounded-full text-sm border border-purple-500/30 hover:bg-purple-500/30 hover:text-purple-300 transition-colors cursor-pointer"
+                        title={isUrl ? `Visit ${displayText}` : `Search for free "${song.title}" on ${resource}`}
+                      >
+                        {displayText}
+                      </a>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -416,37 +479,64 @@ export const EnhancedSongDetail: React.FC<EnhancedSongDetailProps> = ({
               </div>
             )}
 
-            {/* Recording Sources with URLs */}
+            {/* Phase 1: Basic Information Sources */}
+            {(song as any).basicInfoSources?.length > 0 && (
+              <div>
+                <h4 className="text-sm font-medium text-white/80 mb-2">📚 Historical & Biographical Sources</h4>
+                <div className="flex flex-wrap gap-2">
+                  {(song as any).basicInfoSources.map((source: any, index: number) => (
+                    <a
+                      key={index}
+                      href={source.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1 bg-purple-500/20 text-purple-400 rounded-full text-sm border border-purple-500/30 hover:bg-purple-500/30 hover:text-purple-300 transition-colors cursor-pointer"
+                      title={source.content || `Visit ${source.title} - ${source.url}`}
+                    >
+                      {source.title}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Phase 2: Cultural Sources */}
+            {(song as any).culturalSources?.length > 0 && (
+              <div>
+                <h4 className="text-sm font-medium text-white/80 mb-2">🏛️ Cultural & Historical Context Sources</h4>
+                <div className="flex flex-wrap gap-2">
+                  {(song as any).culturalSources.map((source: any, index: number) => (
+                    <a
+                      key={index}
+                      href={source.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1 bg-amber-500/20 text-amber-400 rounded-full text-sm border border-amber-500/30 hover:bg-amber-500/30 hover:text-amber-300 transition-colors cursor-pointer"
+                      title={source.content || `Visit ${source.title} - ${source.url}`}
+                    >
+                      {source.title}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Phase 4: Recording Sources with URLs */}
             {(song as any).recordingSources?.length > 0 && (
               <div>
-                <h4 className="text-sm font-medium text-white/80 mb-2">🔗 Recording Sources</h4>
-                <div className="space-y-2">
+                <h4 className="text-sm font-medium text-white/80 mb-2">🎵 Recording & Streaming Sources</h4>
+                <div className="flex flex-wrap gap-2">
                   {(song as any).recordingSources.map((source: any, index: number) => (
-                    <div key={index} className="bg-white/5 rounded-lg p-3 border border-white/10">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="font-medium text-white/90">{source.title}</div>
-                          {source.url && (
-                            <a 
-                              href={source.url} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-blue-400 hover:text-blue-300 text-sm break-all underline"
-                            >
-                              {source.url}
-                            </a>
-                          )}
-                          {source.content && (
-                            <div className="text-sm text-white/70 mt-1">{source.content}</div>
-                          )}
-                        </div>
-                        {source.type && (
-                          <span className="ml-2 px-2 py-1 bg-gray-500/20 text-gray-400 rounded text-xs">
-                            {source.type}
-                          </span>
-                        )}
-                      </div>
-                    </div>
+                    <a
+                      key={index}
+                      href={source.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1 bg-gray-500/20 text-gray-400 rounded-full text-sm border border-gray-500/30 hover:bg-gray-500/30 hover:text-gray-300 transition-colors cursor-pointer"
+                      title={source.content || `Visit ${source.title} - ${source.url}`}
+                    >
+                      {source.title}
+                    </a>
                   ))}
                 </div>
               </div>
@@ -489,6 +579,8 @@ export const EnhancedSongDetail: React.FC<EnhancedSongDetailProps> = ({
 
             {/* Show message if no research data */}
             {!(song as any).alternativeSpellings?.length && 
+             !(song as any).basicInfoSources?.length &&
+             !(song as any).culturalSources?.length &&
              !(song as any).recordingSources?.length && 
              !(song as any).allSearchFindings?.length && (
               <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
@@ -503,14 +595,6 @@ export const EnhancedSongDetail: React.FC<EnhancedSongDetailProps> = ({
             )}
           </div>,
           true // Always show Research Sources section
-        )}
-
-        {/* Full Explanation */}
-        {renderSection(
-          "Overview",
-          <div className="prose prose-invert">
-            <p className="text-white/80 leading-relaxed whitespace-pre-line">{song.explanation}</p>
-          </div>
         )}
 
         {/* Metadata Footer */}

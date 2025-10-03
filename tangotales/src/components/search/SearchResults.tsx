@@ -170,11 +170,17 @@ const SearchResults: React.FC<SearchResultsProps> = ({
         console.log(`🔍 DETAILED SONG DATA ANALYSIS:`);
         console.log(`- currentAvailability:`, (fullSongData as any).currentAvailability);
         console.log(`- recordingSources:`, (fullSongData as any).recordingSources);
+        console.log(`- basicInfoSources:`, (fullSongData as any).basicInfoSources);
+        console.log(`- culturalSources:`, (fullSongData as any).culturalSources);
         console.log(`- alternativeSpellings:`, (fullSongData as any).alternativeSpellings);
         console.log(`- allSearchFindings:`, (fullSongData as any).allSearchFindings);
         console.log(`- Has currentAvailability?`, !!(fullSongData as any).currentAvailability);
         console.log(`- Has recordingSources?`, !!(fullSongData as any).recordingSources);
+        console.log(`- Has basicInfoSources?`, !!(fullSongData as any).basicInfoSources);
+        console.log(`- Has culturalSources?`, !!(fullSongData as any).culturalSources);
         console.log(`- recordingSources length:`, (fullSongData as any).recordingSources?.length || 0);
+        console.log(`- basicInfoSources length:`, (fullSongData as any).basicInfoSources?.length || 0);
+        console.log(`- culturalSources length:`, (fullSongData as any).culturalSources?.length || 0);
         
         setSelectedSong(fullSongData);
       } else {

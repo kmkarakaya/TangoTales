@@ -347,15 +347,38 @@ Periods: Pre-Golden Age / Guardia Vieja & Guardia Nueva (1880-1935), Golden Age 
       this.emitProgress(1, "✅ Basic information gathered", "✅", true, progressCallback);
       console.log('✅ Turn 1 successful:', Object.keys(basicData));
       
-      // Store Phase 1 data to database
+      // Store Phase 1 data to database - Extract and store URLs as top-level fields
       if (params.songId) {
         try {
-          const processedData = parsePhaseResponse(basicResponse.text, 'basic_info', 'basic_info');
-          await updateSongWithResearchData(params.songId, {
-            phase: 'basic_info',
-            data: processedData
-          });
-          console.log('✅ Phase 1 data stored successfully in database');
+          const { updateDoc, doc, Timestamp } = await import('firebase/firestore');
+          const { db } = await import('./firebase');
+          
+          console.log('🔍 PHASE 1 STORAGE - Extracting sources from basicData:', JSON.stringify(basicData.sources));
+          
+          // Extract basicInfoSources from the parsed response
+          const basicInfoSources = Array.isArray(basicData.sources) ? basicData.sources : [];
+          
+          // Store Phase 1 fields as top-level document fields
+          const songRef = doc(db, 'songs', params.songId);
+          const updateData = {
+            composer: basicData.composer || 'Unknown',
+            lyricist: basicData.lyricist || null,
+            yearComposed: basicData.yearComposed || null,
+            period: basicData.period || 'Golden Age',
+            musicalForm: basicData.musicalForm || 'Tango',
+            basicInfoSources: basicInfoSources,
+            lastUpdated: Timestamp.now(),
+            lastResearchUpdate: Timestamp.now()
+          };
+          
+          console.log('🔍 PHASE 1 STORAGE DEBUG - Data being written to database:');
+          console.log('- basicInfoSources:', JSON.stringify(updateData.basicInfoSources));
+          console.log('- composer:', updateData.composer);
+          console.log('- period:', updateData.period);
+          
+          await updateDoc(songRef, updateData);
+          console.log('✅ Phase 1 data stored successfully in database (including sources)');
+          console.log('- Basic info sources:', basicInfoSources.length);
         } catch (storageError) {
           console.error('❌ Failed to store Phase 1 data:', storageError);
         }
@@ -415,15 +438,36 @@ Keep descriptions concise (1-2 sentences each).`;
       this.emitProgress(2, "✅ Cultural context researched", "✅", true, progressCallback);
       console.log('✅ Turn 2 successful:', Object.keys(culturalData));
       
-      // Store Phase 2 data to database
+      // Store Phase 2 data to database - Extract and store cultural sources as top-level fields
       if (params.songId) {
         try {
-          const processedData = parsePhaseResponse(culturalResponse.text, 'cultural_context', 'cultural_context');
-          await updateSongWithResearchData(params.songId, {
-            phase: 'cultural_context',
-            data: processedData
-          });
-          console.log('✅ Phase 2 data stored successfully in database');
+          const { updateDoc, doc, Timestamp } = await import('firebase/firestore');
+          const { db } = await import('./firebase');
+          
+          console.log('🔍 PHASE 2 STORAGE - Extracting culturalSources from culturalData:', JSON.stringify(culturalData.culturalSources));
+          
+          // Extract culturalSources from the parsed response
+          const culturalSources = Array.isArray(culturalData.culturalSources) ? culturalData.culturalSources : [];
+          
+          // Store Phase 2 fields as top-level document fields
+          const songRef = doc(db, 'songs', params.songId);
+          const updateData = {
+            themes: culturalData.themes || ['tango'],
+            culturalSignificance: culturalData.culturalSignificance || 'Traditional tango composition',
+            historicalContext: culturalData.historicalContext || 'Part of Argentine tango repertoire',
+            culturalSources: culturalSources,
+            lastUpdated: Timestamp.now(),
+            lastResearchUpdate: Timestamp.now()
+          };
+          
+          console.log('🔍 PHASE 2 STORAGE DEBUG - Data being written to database:');
+          console.log('- culturalSources:', JSON.stringify(updateData.culturalSources));
+          console.log('- themes:', updateData.themes);
+          console.log('- culturalSignificance:', updateData.culturalSignificance);
+          
+          await updateDoc(songRef, updateData);
+          console.log('✅ Phase 2 data stored successfully in database (including cultural sources)');
+          console.log('- Cultural sources:', culturalSources.length);
         } catch (storageError) {
           console.error('❌ Failed to store Phase 2 data:', storageError);
         }
@@ -584,9 +628,36 @@ Prioritize current/recent recordings found through search. Limit to 3-5 most sig
               url.includes('wikipedia') || url.includes('tango') || url.includes('music')
             );
             
-            // Override the recordingData with recovered URLs
-            recordingData.currentAvailability = streamingUrls;
-            recordingData.recordingSources = researchUrls;
+            // Override the recordingData with recovered URLs in proper object format
+            if (streamingUrls.length > 0) {
+              recordingData.currentAvailability = {
+                streamingPlatforms: streamingUrls.map((url: string) => {
+                  if (url.includes('spotify')) return 'Spotify';
+                  if (url.includes('apple')) return 'Apple Music';
+                  if (url.includes('youtube')) return 'YouTube Music';
+                  if (url.includes('amazon')) return 'Amazon Music';
+                  return url.split('/')[2] || 'Unknown Platform';
+                }),
+                recentPerformances: null
+              };
+            }
+            
+            if (researchUrls.length > 0) {
+              recordingData.recordingSources = researchUrls.map((url: string) => ({
+                title: url.includes('todotango') ? 'Todo Tango' :
+                       url.includes('tango.info') ? 'Tango.info' :
+                       url.includes('wikipedia') ? 'Wikipedia' :
+                       url.includes('discogs') ? 'Discogs' :
+                       url.split('/')[2] || 'Music Database',
+                url: url,
+                type: url.includes('spotify') || url.includes('apple') || url.includes('youtube') ? 'streaming_platform' :
+                      url.includes('discogs') ? 'discography' :
+                      url.includes('wikipedia') ? 'encyclopedia' :
+                      'database',
+                content: `Information source for La Cumparsita recordings and availability.`
+              }));
+            }
+            
             recordingData.allSearchFindings = extractedUrls;
             
             console.log('✅ PHASE 4 RECOVERY - URLs recovered and added to recordingData');
