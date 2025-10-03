@@ -24,6 +24,7 @@ export interface Recording {
   year?: number;
   album?: string;
   style: 'Traditional' | 'Modern' | 'Nuevo Tango' | 'Electronic';
+  availability?: 'currently_available' | 'historical' | 'unknown';
 }
 
 export interface Performer {
@@ -31,6 +32,7 @@ export interface Performer {
   role: 'Orchestra Leader' | 'Singer' | 'Instrumentalist' | 'Dancer';
   period: 'Golden Age' | 'Post-Golden Age' | 'Contemporary';
   notableCollaborations?: string[];
+  recentActivity?: string;
 }
 
 export interface SongMetadata {
@@ -78,11 +80,11 @@ export interface EnhancedSongResult {
  * Progress phases for the AI research process
  */
 const PROGRESS_PHASES = [
-  { message: "🔍 Validating tango song title...", icon: "🔍" },
-  { message: "📚 Gathering basic song information...", icon: "📚" },
-  { message: "🏛️ Researching cultural significance...", icon: "🏛️" },
+  { message: "🔍 Searching and validating tango song title...", icon: "🔍" },
+  { message: "📚 Researching composer and historical details...", icon: "📚" },
+  { message: "🏛️ Finding cultural significance and context...", icon: "🏛️" },
   { message: "🎵 Analyzing musical characteristics...", icon: "🎵" },
-  { message: "🎼 Finding recordings and performers...", icon: "🎼" },
+  { message: "🎼 Discovering current recordings and performers...", icon: "🎼" },
   { message: "✨ Creating comprehensive summary...", icon: "✨" }
 ];
 
@@ -94,7 +96,8 @@ class SongInformationService {
   
   async getEnhancedSongInformation(
     params: EnhancedSongParams, 
-    progressCallback?: ProgressCallback
+    progressCallback?: ProgressCallback,
+    useSearchGrounding = true  // 🆕 Enable search grounding by default
   ): Promise<EnhancedSongResult & { metadata: SongMetadata }> {
     console.log('🚀 GEMINI DEBUG - Starting enhanced song information request');
     console.log('- Song title:', params.title);
@@ -115,13 +118,24 @@ class SongInformationService {
       if (!this.chatSessions.has(sessionKey)) {
         console.log('📝 GEMINI DEBUG - Creating new chat session');
         
-        const chat = ai.chats.create({
+        // 🆕 Create chat config with optional search grounding
+        const chatConfig: any = {
           model: "gemini-2.5-flash",
           config: {
             temperature: 0.3, // Lower for factual information
             maxOutputTokens: 2048
           }
-        });
+        };
+        
+        // 🆕 Add search grounding if enabled
+        if (useSearchGrounding) {
+          chatConfig.config.tools = [{ google_search: {} }];
+          console.log('🔍 GEMINI DEBUG - Search grounding enabled');
+        } else {
+          console.log('📚 GEMINI DEBUG - Using knowledge-only mode');
+        }
+        
+        const chat = ai.chats.create(chatConfig);
         
         console.log('✅ GEMINI DEBUG - Chat session created successfully');
         this.chatSessions.set(sessionKey, chat);
@@ -182,24 +196,32 @@ class SongInformationService {
     
     try {
       console.log('📤 Turn 0: Title correction and validation');
-      const titleCorrectionPrompt = `TANGO VALIDATION TASK: Analyze if "${songTitle}" is a legitimate tango song title from the Argentine tango repertoire (1880-present).
+      const titleCorrectionPrompt = `TANGO VALIDATION WITH SEARCH: Search for "${songTitle}" to verify if it's a legitimate tango song title from the Argentine tango repertoire (1880-present).
+
+🔍 SEARCH INSTRUCTIONS:
+- Search for this title in tango databases, discographies, and music archives
+- Look for official recordings, sheet music, or tango repertoire lists
+- Check against famous tango collections and historical records
+- Verify spelling variations and alternative titles
 
 Respond ONLY with this JSON:
 {
-  "correctedTitle": "exact correct title of the tango song or null if not a known tango",
+  "correctedTitle": "exact correct title found in search results or null if not found",
   "confidence": "high" | "medium" | "low" | "not_found",
-  "alternativeSpellings": ["possible alternative spelling 1", "alternative 2"] or null,
-  "isKnownTango": true | false
+  "alternativeSpellings": ["verified alternative spelling 1", "alternative 2"] or null,
+  "isKnownTango": true | false,
+  "searchVerified": true | false,
+  "foundInSources": ["source1", "source2"] or null
 }
 
 VALIDATION CRITERIA:
-- ONLY accept titles that are documented Argentine tango compositions
+- ONLY accept titles that are documented Argentine tango compositions verified through search
 - Check against famous tangos: La Cumparsita, El Choclo, Adios Muchachos, Por Una Cabeza, etc.
-- If it's a misspelling of a known tango, correct it (e.g., "merseditas" → "Merceditas", "bahia blanka" → "Bahía Blanca")
+- If it's a misspelling of a known tango found in search, correct it (e.g., "merseditas" → "Merceditas", "bahia blanka" → "Bahía Blanca")
 - REJECT terms that are clearly not tango songs (random words, other music genres, non-Spanish titles unless famous)
 - REJECT general words like colors, animals, random phrases in any language
 - Be extremely strict: when in doubt, set isKnownTango to false
-- Only set isKnownTango to true for confirmed Argentine tango compositions
+- Only set isKnownTango to true for confirmed Argentine tango compositions found in search results
 
 EXAMPLES TO REJECT: "yellow flower", "sarı çiçek", "hello world", "rock music", "jazz standard"`;
       
@@ -263,13 +285,22 @@ EXAMPLES TO REJECT: "yellow flower", "sarı çiçek", "hello world", "rock music
     
     try {
       console.log('📤 Turn 1: Basic song information');
-      const basicPrompt = `For the tango song "${correctedTitle}", provide ONLY this JSON structure:
+      const basicPrompt = `For the tango song "${correctedTitle}", search for historical and biographical information and provide ONLY this JSON structure:
+
+🔍 SEARCH INSTRUCTIONS:
+- Search for composer, lyricist, and composition year in tango databases
+- Look for biographical information about the creators
+- Check multiple sources for accuracy (discographies, music archives, tango history sites)
+- Verify the musical form (tango, vals, milonga) through search
+
 {
-  "composer": "composer full name or Unknown",
-  "lyricist": "lyricist name or null", 
-  "yearComposed": year_number_or_null,
+  "composer": "composer full name verified through search or Unknown",
+  "lyricist": "lyricist name verified through search or null", 
+  "yearComposed": year_number_verified_through_search_or_null,
   "period": "Pre-Golden Age" | "Golden Age" | "Post-Golden Age" | "Contemporary",
-  "musicalForm": "Tango" | "Vals" | "Milonga"
+  "musicalForm": "Tango" | "Vals" | "Milonga",
+  "searchVerified": true | false,
+  "sources": ["source1", "source2"] or null
 }
 
 Periods: Pre-Golden Age (1880-1916), Golden Age (1916-1955), Post-Golden Age (1955-1980), Contemporary (1980+)`;
@@ -299,11 +330,22 @@ Periods: Pre-Golden Age (1880-1916), Golden Age (1916-1955), Post-Golden Age (19
     
     try {
       console.log('📤 Turn 2: Cultural and thematic information');
-      const culturalPrompt = `For "${correctedTitle}", provide ONLY this JSON:
+      const culturalPrompt = `For "${correctedTitle}", search for cultural and historical information, then provide ONLY this JSON:
+
+🔍 SEARCH INSTRUCTIONS:
+- Search for the song's cultural significance in tango history
+- Look for historical context about when and why it was written
+- Find information about its themes and lyrical content
+- Check tango history sites and cultural archives
+
 {
   "themes": ["theme1", "theme2", "theme3"],
-  "culturalSignificance": "brief description of cultural importance or null",
-  "historicalContext": "historical backdrop when written or null"
+  "culturalSignificance": "brief description of cultural importance found through search or null",
+  "historicalContext": "historical backdrop when written found through search or null",
+  "searchFindings": {
+    "culturalImpact": "impact_found_in_search" or null,
+    "historicalEvents": "related_historical_events_found" or null
+  }
 }
 
 Keep descriptions concise (1-2 sentences each).`;
@@ -382,26 +424,40 @@ Keep descriptions concise (1-2 sentences each).`;
     
     try {
       console.log('📤 Turn 4: Notable recordings and performers');
-      const recordingPrompt = `For "${correctedTitle}", provide ONLY this JSON:
+      const recordingPrompt = `For "${correctedTitle}", search for current and historical recordings, then provide ONLY this JSON:
+
+🔍 SEARCH INSTRUCTIONS:
+- Search for recordings on music platforms (Spotify, Apple Music, YouTube)
+- Look for historical recordings in tango archives and discographies
+- Find recent performances and contemporary interpretations
+- Search for notable performers and orchestras who have recorded this tango
+- Check for album information and release years
+
 {
   "notableRecordings": [
     {
-      "artist": "artist_name",
-      "year": year_or_null,
-      "album": "album_name_or_null",
-      "style": "Traditional" | "Modern" | "Nuevo Tango" | "Electronic"
+      "artist": "artist_name_found_in_search",
+      "year": year_found_in_search_or_null,
+      "album": "album_name_found_in_search_or_null",
+      "style": "Traditional" | "Modern" | "Nuevo Tango" | "Electronic",
+      "availability": "currently_available" | "historical" | "unknown"
     }
   ],
   "notablePerformers": [
     {
-      "name": "performer_name",
+      "name": "performer_name_found_in_search",
       "role": "Orchestra Leader" | "Singer" | "Instrumentalist" | "Dancer",
-      "period": "Golden Age" | "Post-Golden Age" | "Contemporary"
+      "period": "Golden Age" | "Post-Golden Age" | "Contemporary",
+      "recentActivity": "recent_performances_or_recordings_found" or null
     }
-  ]
+  ],
+  "currentAvailability": {
+    "streamingPlatforms": ["platform1", "platform2"] or null,
+    "recentPerformances": ["event1", "event2"] or null
+  }
 }
 
-Limit to 3-5 most significant recordings and performers.`;
+Prioritize current/recent recordings found through search. Limit to 3-5 most significant recordings and performers.`;
       
       const recordingResponse = await chat.sendMessage({ message: recordingPrompt });
       console.log('📥 Turn 4 response:', recordingResponse.text?.length || 0, 'chars');
