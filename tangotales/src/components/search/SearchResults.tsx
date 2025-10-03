@@ -639,6 +639,9 @@ const SongCard: React.FC<SongCardProps> = ({ song, onClick, showEnhanceButton = 
             {song.lastUpdated && song.lastUpdated !== song.createdAt && (
               <span> • Last Update: {formatDate(song.lastUpdated)}</span>
             )}
+            {localRating > 0 && (
+              <span> • Rating: {localRating.toFixed(1)}/5 ({localTotalRatings} review{localTotalRatings !== 1 ? 's' : ''})</span>
+            )}
           </div>
           <div className="flex items-center space-x-3">
             {showEnhanceButton && onEnhance && (

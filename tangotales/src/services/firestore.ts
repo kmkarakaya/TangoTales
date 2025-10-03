@@ -18,6 +18,7 @@ import { db } from './firebase';
 import { Song, Rating, SongMetadata } from '../types/song';
 import { songInformationService } from './enhancedGemini';
 import { getSampleSongByTitle, createSongFromSample } from '../utils/sampleSongs';
+import { prepareTitle, generateSongId } from '../utils/titleFormatter';
 
 // Helper function to convert Firestore timestamp to Date
 const convertTimestamp = (timestamp: any): Date => {
@@ -238,16 +239,17 @@ export const getSongsByLetter = async (letter: string): Promise<Song[]> => {
  */
 export const createSong = async (songData: Omit<Song, 'id' | 'createdAt' | 'lastUpdated' | 'searchCount' | 'averageRating' | 'totalRatings'>): Promise<string> => {
   try {
-    // Generate a document ID from the song title (URL-friendly)
-    const songId = songData.title
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
+    // Format the title to ensure proper capitalization
+    const formattedTitle = prepareTitle(songData.title);
+    console.log(`🏷️ TITLE FORMATTING - Original: "${songData.title}" → Formatted: "${formattedTitle}"`);
+    
+    // Generate a document ID from the formatted title (URL-friendly)
+    const songId = generateSongId(formattedTitle);
 
     const now = Timestamp.now();
     const newSong = {
       // Primary identification
-      title: songData.title,
+      title: formattedTitle,
       originalTitle: songData.originalTitle,
       alternativeTitles: songData.alternativeTitles || [],
       
@@ -311,11 +313,12 @@ export const createEnhancedSong = async (
   metadata: any
 ): Promise<string> => {
   try {
-    // Generate a document ID from the song title (URL-friendly)
-    const songId = title
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
+    // Format the title to ensure proper capitalization
+    const formattedTitle = prepareTitle(title);
+    console.log(`🏷️ TITLE FORMATTING - Original: "${title}" → Formatted: "${formattedTitle}"`);
+    
+    // Generate a document ID from the formatted title (URL-friendly)
+    const songId = generateSongId(formattedTitle);
 
     const now = Timestamp.now();
     // Sanitize data to ensure Firebase compatibility (no undefined values)
@@ -323,7 +326,7 @@ export const createEnhancedSong = async (
     
     const enhancedSong = {
       // Primary identification
-      title: title,
+      title: formattedTitle,
       originalTitle: sanitizeValue(enhancedData.originalTitle),
       alternativeTitles: enhancedData.alternativeTitles || [],
       
@@ -614,8 +617,9 @@ export const createSongWithAI = async (songTitle: string): Promise<Song | null> 
       
       // Create enhanced song with AI data
       // Use corrected title if available, otherwise use original user input  
-      const finalTitle = (aiResult as any).title || songTitle;
-      console.log(`🏷️ FIRESTORE DEBUG - Using title for database: "${finalTitle}" (original: "${songTitle}")`);
+      const aiTitle = (aiResult as any).title || songTitle;
+      const finalTitle = prepareTitle(aiTitle);
+      console.log(`🏷️ FIRESTORE DEBUG - Title processing: Original: "${songTitle}" → AI: "${aiTitle}" → Formatted: "${finalTitle}"`);
       
       // Check if a song with the corrected title already exists
       if (finalTitle !== songTitle) {
@@ -669,16 +673,15 @@ export const createSongWithAI = async (songTitle: string): Promise<Song | null> 
       const sampleData = getSampleSongByTitle(songTitle);
       
       if (sampleData) {
-        console.log(`📋 Using sample data for user request: "${songTitle}"`);
+        // Format the title to ensure proper capitalization
+        const formattedTitle = prepareTitle(songTitle);
+        console.log(`📋 Using sample data for user request: "${songTitle}" → Formatted: "${formattedTitle}"`);
         
-        // Create song ID from title
-        const songId = songTitle
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/^-+|-+$/g, '');
+        // Create song ID from formatted title
+        const songId = generateSongId(formattedTitle);
         
         // Create complete song from sample data
-        const enhancedSong = createSongFromSample(sampleData, songTitle, songId);
+        const enhancedSong = createSongFromSample(sampleData, formattedTitle, songId);
         
         // Convert to Firebase format and save
         const now = Timestamp.now();
