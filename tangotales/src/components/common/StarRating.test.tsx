@@ -81,4 +81,43 @@ describe('StarRating Component', () => {
     
     expect(handleRate).not.toHaveBeenCalled();
   });
+
+  test('displays half stars for decimal ratings', () => {
+    const { container } = render(<StarRating rating={4.3} />);
+    const stars = container.querySelectorAll('button');
+    
+    // First 4 should be full stars
+    expect(stars[0].textContent).toBe('★');
+    expect(stars[1].textContent).toBe('★');
+    expect(stars[2].textContent).toBe('★');
+    expect(stars[3].textContent).toBe('★');
+    
+    // 5th star should be half star
+    expect(stars[4].textContent).toBe('⯨');
+  });
+
+  test('displays correct stars for rating 3.7', () => {
+    const { container } = render(<StarRating rating={3.7} />);
+    const stars = container.querySelectorAll('button');
+    
+    // First 3 should be full stars
+    expect(stars[0].textContent).toBe('★');
+    expect(stars[1].textContent).toBe('★');
+    expect(stars[2].textContent).toBe('★');
+    
+    // 4th star should be half star
+    expect(stars[3].textContent).toBe('⯨');
+    
+    // 5th star should be empty
+    expect(stars[4].textContent).toBe('☆');
+  });
+
+  test('displays all full stars for rating 5.0', () => {
+    const { container } = render(<StarRating rating={5.0} />);
+    const stars = container.querySelectorAll('button');
+    
+    stars.forEach(star => {
+      expect(star.textContent).toBe('★');
+    });
+  });
 });
