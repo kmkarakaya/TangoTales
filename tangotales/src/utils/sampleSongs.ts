@@ -1,5 +1,5 @@
 import { Song } from '../types/song';
-
+ 
 /**
  * Sample enhanced songs for testing the UI without AI dependency
  * These can be used when AI service fails or for development testing

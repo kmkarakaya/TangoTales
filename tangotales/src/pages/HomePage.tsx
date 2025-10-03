@@ -14,7 +14,8 @@ const HomePage: React.FC = () => {
       try {
         const songs = await getPopularSongs(12);
         setResults(songs);
-        setHasSearched(true);
+        // We loaded popular songs for the landing page; do not mark this as a user search
+        setHasSearched(false);
       } catch (error) {
         console.error('Failed to load popular songs:', error);
       }
@@ -50,7 +51,9 @@ const HomePage: React.FC = () => {
       const songs = await getPopularSongs(20);
       setResults(songs);
       setQuery('');
-      setHasSearched(true);
+      // Loading popular songs is not a text search — keep hasSearched false so the UI shows
+      // a neutral popular list instead of a "Search Results" header.
+      setHasSearched(false);
     } catch (error) {
       console.error('Failed to load popular songs:', error);
       setError(error instanceof Error ? error.message : 'Failed to load songs');

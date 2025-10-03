@@ -276,13 +276,21 @@ const SearchResultsList: React.FC<SearchResultsListProps> = ({ results, query, o
     <div className="space-y-6">
       {/* Results Header */}
       <div className="bg-white rounded-lg shadow-md p-4">
-        <h2 className="text-2xl font-bold text-red-700 mb-2">
-          Search Results
-        </h2>
-        <p className="text-gray-600">
-          Found {results.length} song{results.length !== 1 ? 's' : ''} 
-          {query && ` for "${query}"`}
-        </p>
+        {(() => {
+          const hasQuery = !!query && query.trim() !== '';
+          const title = hasQuery ? 'Search Results' : 'Songs';
+          const countText = `Found ${results.length} song${results.length !== 1 ? 's' : ''}`;
+          const subtitle = hasQuery ? `${countText} for "${query}"` : countText;
+
+          return (
+            <>
+              <h2 className="text-2xl font-bold text-red-700 mb-2">
+                {title}
+              </h2>
+              <p className="text-gray-600">{subtitle}</p>
+            </>
+          );
+        })()}
         
         {/* Show AI Enhancement Option for Low Quality Songs */}
         {hasLowQualitySongs && (

@@ -409,21 +409,22 @@ export const incrementSearchCount = async (songId: string): Promise<void> => {
  */
 export const addRating = async (ratingData: Omit<Rating, 'id' | 'timestamp'>): Promise<string> => {
   try {
-    const newRating = {
+    const newRating: any = {
       songId: ratingData.songId,
       rating: ratingData.rating,
-      comment: ratingData.comment,
+      // Firestore disallows undefined values; store null when comment is not provided
+      comment: ratingData.comment ?? null,
       timestamp: Timestamp.now()
     };
 
     const docRef = await addDoc(collection(db, 'ratings'), newRating);
-    
-    // Update the song's average rating
+
+    // Update the song's average rating (best-effort)
     await updateSongRating(ratingData.songId);
-    
+
     return docRef.id;
   } catch (error) {
-    console.error('Error adding rating:', error);
+    console.error('Error adding rating:', error instanceof Error ? error.message : error);
     throw new Error('Failed to add rating');
   }
 };
@@ -433,16 +434,25 @@ export const addRating = async (ratingData: Omit<Rating, 'id' | 'timestamp'>): P
  */
 export const getRatingsBySong = async (songId: string): Promise<Rating[]> => {
   try {
+    // Query only by songId (no orderBy) to avoid requiring a composite index.
     const q = query(
       collection(db, 'ratings'),
-      where('songId', '==', songId),
-      orderBy('timestamp', 'desc')
+      where('songId', '==', songId)
     );
 
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => convertRatingData(doc.id, doc.data()));
+    const ratings = querySnapshot.docs.map(doc => convertRatingData(doc.id, doc.data()));
+
+    // Sort ratings by timestamp descending in JS (most recent first)
+    ratings.sort((a, b) => {
+      const ta = a.timestamp instanceof Date ? a.timestamp.getTime() : new Date(a.timestamp).getTime();
+      const tb = b.timestamp instanceof Date ? b.timestamp.getTime() : new Date(b.timestamp).getTime();
+      return tb - ta;
+    });
+
+    return ratings;
   } catch (error) {
-    console.error('Error getting ratings by song:', error);
+    console.error('Error getting ratings by song:', error instanceof Error ? error.message : error);
     throw new Error('Failed to retrieve ratings');
   }
 };
@@ -453,7 +463,7 @@ export const getRatingsBySong = async (songId: string): Promise<Rating[]> => {
 const updateSongRating = async (songId: string): Promise<void> => {
   try {
     const ratings = await getRatingsBySong(songId);
-    
+
     if (ratings.length === 0) {
       return;
     }
@@ -461,12 +471,14 @@ const updateSongRating = async (songId: string): Promise<void> => {
     const totalRating = ratings.reduce((sum, rating) => sum + rating.rating, 0);
     const averageRating = totalRating / ratings.length;
 
-    await updateDoc(doc(db, 'songs', songId), {
+    const updateData = {
       averageRating: Math.round(averageRating * 10) / 10, // Round to 1 decimal place
       totalRatings: ratings.length
-    });
+    };
+
+    await updateDoc(doc(db, 'songs', songId), updateData);
   } catch (error) {
-    console.error('Error updating song rating:', error);
+    console.error('Error updating song rating:', error instanceof Error ? error.message : error);
     // Don't throw error as this is an internal operation
   }
 };
