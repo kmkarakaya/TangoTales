@@ -594,21 +594,40 @@ const NoResultsFound: React.FC<NoResultsFoundProps> = ({ query, onRefreshSearch,
 
   return (
     <div className="bg-white rounded-lg shadow-md p-8 text-center">
-      <h3 className="text-2xl font-bold text-red-700 mb-4">
-        No Songs Found
-      </h3>
-      <p className="text-gray-600 mb-6 max-w-md mx-auto">
-        {query 
-          ? `We couldn't find any tango songs matching "${query}" in our database.`
-          : "No songs found in our database."
-        }
-      </p>
+      {query ? (
+        <>
+          <h3 className="text-2xl font-bold text-tango-red mb-4">
+            🎶 Thank you! We missed "{query}" in our collection
+          </h3>
+          <div className="text-gray-700 mb-6 max-w-lg mx-auto space-y-3">
+            <p className="text-lg font-medium text-tango-dark-red">
+              Let's research this song!
+            </p>
+            <p className="text-gray-600">
+              This tango song isn't in our collection yet, but that's perfectly normal! 
+              Our database grows through passionate tango lovers like you.
+            </p>
+            <p className="text-gray-600">
+              I can research this song's story, lyrics meaning, and historical context using AI, 
+              then save it for everyone to enjoy.
+            </p>
+          </div>
+        </>
+      ) : (
+        <>
+          <h3 className="text-2xl font-bold text-gray-700 mb-4">
+            🎵 Ready to Discover Tango Stories
+          </h3>
+          <div className="text-gray-600 mb-6 max-w-lg mx-auto">
+            <p>
+              Enter a tango song title above to search our collection or research new songs with AI.
+            </p>
+          </div>
+        </>
+      )}
       
       {/* AI Research Button */}
       <div className="space-y-3">
-        <p className="text-gray-500 text-sm">
-          {query ? "Would you like me to research this song for you?" : "Enter a song title to research with AI."}
-        </p>
         
         {researchError && (
           <div className="text-red-600 text-sm mb-3">
@@ -619,19 +638,19 @@ const NoResultsFound: React.FC<NoResultsFoundProps> = ({ query, onRefreshSearch,
         <button 
           onClick={handleResearchWithAI}
           disabled={isResearching || !query.trim()}
-          className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${
+          className={`px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 ${
             isResearching || !query.trim()
               ? 'bg-gray-400 text-white opacity-50 cursor-not-allowed'
-              : 'bg-blue-600 hover:bg-blue-700 text-white hover:scale-105 shadow-lg'
+              : 'bg-tango-red hover:bg-tango-dark-red text-white hover:scale-105 shadow-lg transform'
           }`}
         >
           {isResearching ? (
             <>
               <LoadingSpinner size="sm" className="inline mr-2" />
-              🤖 Researching...
+              🎵 Researching...
             </>
           ) : (
-            '🤖 Research with AI'
+            '🚀 Start AI Research'
           )}
         </button>
       </div>
