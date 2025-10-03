@@ -282,22 +282,39 @@ const SearchResultsList: React.FC<SearchResultsListProps> = ({ results, query, o
       <div className="bg-white rounded-lg shadow-md p-4">
         {(() => {
           const hasQuery = !!query && query.trim() !== '';
-          const title = hasQuery ? 'Search Results' : 'Songs';
-          const countText = `Found ${results.length} song${results.length !== 1 ? 's' : ''}`;
-          const subtitle = hasQuery ? `${countText} for "${query}"` : countText;
-
-          return (
-            <>
-              <h2 className="text-2xl font-bold text-red-700 mb-2">
-                {title}
-              </h2>
-              <p className="text-gray-600">{subtitle}</p>
-            </>
-          );
+          
+          if (hasQuery) {
+            // Search results
+            const title = 'Search Results';
+            const countText = `Found ${results.length} song${results.length !== 1 ? 's' : ''}`;
+            const subtitle = `${countText} for "${query}"`;
+            
+            return (
+              <>
+                <h2 className="text-2xl font-bold text-red-700 mb-2">
+                  {title}
+                </h2>
+                <p className="text-gray-600">{subtitle}</p>
+              </>
+            );
+          } else {
+            // Popular songs browsing
+            const title = 'Popular Songs';
+            const subtitle = results.length === 10 ? 'Top Ten' : `Top ${results.length}`;
+            
+            return (
+              <>
+                <h2 className="text-2xl font-bold text-red-700 mb-2">
+                  {title}
+                </h2>
+                <p className="text-gray-600">{subtitle}</p>
+              </>
+            );
+          }
         })()}
         
-        {/* Show AI Enhancement Option for Low Quality Songs */}
-        {hasLowQualitySongs && (
+        {/* Show AI Enhancement Option for Low Quality Songs - only for actual searches */}
+        {hasLowQualitySongs && query && query.trim() !== '' && (
           <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
             <div className="flex items-start space-x-2">
               <div className="text-blue-600 text-sm">
