@@ -45,7 +45,7 @@ const EnhanceWithAIButton: React.FC<EnhanceWithAIButtonProps> = ({
           
           // Research the song with enhanced AI and progress tracking
           const enhancedResult = await songInformationService.getEnhancedSongInformation(
-            { title: song.title }, 
+            { title: song.title, songId: song.id }, 
             (progress: ProgressUpdate) => {
               setCurrentProgress(progress);
             }
@@ -155,6 +155,39 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   const [enhancedSongs, setEnhancedSongs] = useState<Map<string, Song>>(new Map());
   const [modalProgress, setModalProgress] = useState<ProgressUpdate | null>(null);
 
+  // Handle clicking on a song card - fetch full data from database
+  const handleSongClick = async (song: Song) => {
+    try {
+      // Import firestore service
+      const { getSongById } = await import('../../services/firestore');
+      
+      console.log(`🔍 Fetching full song data for: "${song.title}" (ID: ${song.id})`);
+      
+      // Fetch complete song data from database
+      const fullSongData = await getSongById(song.id);
+      if (fullSongData) {
+        console.log(`✅ Loaded complete song data:`, fullSongData);
+        console.log(`🔍 DETAILED SONG DATA ANALYSIS:`);
+        console.log(`- currentAvailability:`, (fullSongData as any).currentAvailability);
+        console.log(`- recordingSources:`, (fullSongData as any).recordingSources);
+        console.log(`- alternativeSpellings:`, (fullSongData as any).alternativeSpellings);
+        console.log(`- allSearchFindings:`, (fullSongData as any).allSearchFindings);
+        console.log(`- Has currentAvailability?`, !!(fullSongData as any).currentAvailability);
+        console.log(`- Has recordingSources?`, !!(fullSongData as any).recordingSources);
+        console.log(`- recordingSources length:`, (fullSongData as any).recordingSources?.length || 0);
+        
+        setSelectedSong(fullSongData);
+      } else {
+        console.log(`⚠️ Could not fetch full data, using search result data for: "${song.title}"`);
+        setSelectedSong(song);
+      }
+    } catch (error) {
+      console.error(`❌ Error fetching full song data for "${song.title}":`, error);
+      // Fallback to search result data
+      setSelectedSong(song);
+    }
+  };
+
   // Handle enhancement that keeps modal open and updates content
   const handleEnhanceSongInModal = async (song: Song) => {
     setEnhancingSong(song.id);
@@ -169,7 +202,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
       
       // Research the song with enhanced AI and progress tracking
       const enhancedResult = await songInformationService.getEnhancedSongInformation(
-        { title: song.title },
+        { title: song.title, songId: song.id },
         (progress: ProgressUpdate) => {
           setModalProgress(progress);
         }
@@ -267,7 +300,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
           <SearchResultsList 
             results={results.map(song => enhancedSongs.get(song.id) || song)} 
             query={query} 
-            onSongClick={setSelectedSong}
+            onSongClick={handleSongClick}
             onEnhance={handleEnhanceSongInModal}
             enhancingSongId={enhancingSong}
             onLoadMore={loadMorePopular}

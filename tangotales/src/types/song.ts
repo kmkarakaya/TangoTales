@@ -68,6 +68,13 @@ export interface CurrentAvailability {
   searchFindings: SearchFindings[];
 }
 
+export interface RecordingSource {
+  title: string;
+  url: string;
+  type: string;
+  content?: string;
+}
+
 export interface Song {
   // Primary identification
   id: string;
@@ -120,6 +127,8 @@ export interface Song {
   musicalAnalysis?: MusicalAnalysis;
   notableRecordings?: NotableRecordings;
   currentAvailability?: CurrentAvailability;
+  recordingSources?: RecordingSource[];
+  alternativeSpellings?: string[];
   
   // Research metadata
   researchCompleted?: boolean;

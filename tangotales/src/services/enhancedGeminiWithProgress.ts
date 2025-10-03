@@ -2,6 +2,8 @@ import { GoogleGenAI } from '@google/genai';
 import { config } from '../utils/config';
 import { updateSongWithResearchData, markResearchComplete } from './firestore';
 import { parsePhaseResponse } from './responseParser';
+import { doc, updateDoc, Timestamp } from 'firebase/firestore';
+import { db } from './firebase';
 
 // Initialize Gemini AI client with error handling
 let ai: GoogleGenAI | null = null;
@@ -77,6 +79,27 @@ export interface EnhancedSongResult {
   story?: string;
   inspiration?: string;
   explanation: string;
+  // CRITICAL: URL and streaming data fields that were missing!
+  currentAvailability?: {
+    streamingPlatforms?: string[];
+    purchaseLinks?: string[];
+    freeResources?: string[];
+    recentPerformances?: string[];
+  };
+  recordingSources?: {
+    title: string;
+    url: string;
+    type: string;
+    content?: string;
+  }[];
+  alternativeSpellings?: string[];
+  allSearchFindings?: {
+    phase: string;
+    query: string;
+    findings: string;
+    confidence: string;
+    sources?: { title: string; snippet: string }[];
+  }[];
 }
 
 /**
@@ -530,15 +553,78 @@ Prioritize current/recent recordings found through search. Limit to 3-5 most sig
       this.emitProgress(4, "✅ Recordings and performers found", "✅", true, progressCallback);
       console.log('✅ Turn 4 successful:', Object.keys(recordingData));
       
-      // Store Phase 4 data to database
+      // 🔍 DEBUG: Log the exact structure of LLM response for URL investigation
+      console.log('🔍 DEBUG Turn 4 - Full LLM Response Structure:');
+      console.log('- recordingData keys:', Object.keys(recordingData));
+      console.log('- currentAvailability present:', !!recordingData.currentAvailability);
+      console.log('- recordingSources present:', !!recordingData.recordingSources);
+      console.log('- currentAvailability value:', recordingData.currentAvailability);
+      console.log('- recordingSources value:', recordingData.recordingSources);
+      console.log('- Raw response text (first 500 chars):', recordingResponse.text?.substring(0, 500));
+      
+      // URL Recovery Logic - If JSON parsing failed, try to extract URLs manually
+      if ((!recordingData.currentAvailability && !recordingData.recordingSources) && recordingResponse.text) {
+        console.log('🛠️ PHASE 4 RECOVERY - No URL fields found, attempting manual extraction from raw response');
+        try {
+          // Extract URLs using regex
+          const urlRegex = /(https?:\/\/[^\s"'\],}]+)/g;
+          const extractedUrls = recordingResponse.text.match(urlRegex) || [];
+          
+          if (extractedUrls.length > 0) {
+            console.log('🔍 PHASE 4 RECOVERY - Found URLs in raw response:', extractedUrls);
+            
+            // Categorize URLs
+            const streamingUrls = extractedUrls.filter((url: string) => 
+              url.includes('spotify') || url.includes('apple') || url.includes('youtube') || 
+              url.includes('amazon') || url.includes('bandcamp') || url.includes('soundcloud')
+            );
+            
+            const researchUrls = extractedUrls.filter((url: string) => 
+              url.includes('discogs') || url.includes('archive') || url.includes('library') ||
+              url.includes('wikipedia') || url.includes('tango') || url.includes('music')
+            );
+            
+            // Override the recordingData with recovered URLs
+            recordingData.currentAvailability = streamingUrls;
+            recordingData.recordingSources = researchUrls;
+            recordingData.allSearchFindings = extractedUrls;
+            
+            console.log('✅ PHASE 4 RECOVERY - URLs recovered and added to recordingData');
+            console.log('- Streaming URLs:', streamingUrls.length);
+            console.log('- Research URLs:', researchUrls.length);
+          }
+        } catch (error) {
+          console.error('❌ PHASE 4 RECOVERY - Failed to recover URL data:', error);
+        }
+      }
+      
+      // Store Phase 4 data to database - Save ALL collected data including URLs as top-level fields
+      console.log('🔍 PHASE 4 STORAGE - Checking params.songId:', params.songId, 'type:', typeof params.songId);
       if (params.songId) {
         try {
-          const processedData = parsePhaseResponse(recordingResponse.text, 'notable_recordings', 'notable_recordings');
-          await updateSongWithResearchData(params.songId, {
-            phase: 'notable_recordings',
-            data: processedData
-          });
-          console.log('✅ Phase 4 data stored successfully in database');
+          // CRITICAL FIX: Store each field as top-level document fields, not nested under notableRecordings
+          const songRef = doc(db, 'songs', params.songId);
+          const updateData = {
+            notableRecordings: recordingData.notableRecordings || [],
+            currentAvailability: recordingData.currentAvailability || null,
+            recordingSources: recordingData.recordingSources || [],
+            lastUpdated: Timestamp.now(),
+            lastResearchUpdate: Timestamp.now()
+          };
+          
+          // Debug the actual data being stored
+          console.log('🔍 PHASE 4 STORAGE DEBUG - Data being written to database:');
+          console.log('- notableRecordings:', JSON.stringify(updateData.notableRecordings));
+          console.log('- currentAvailability:', JSON.stringify(updateData.currentAvailability));
+          console.log('- recordingSources:', JSON.stringify(updateData.recordingSources));
+          console.log('- recordingData.currentAvailability:', JSON.stringify(recordingData.currentAvailability));
+          console.log('- recordingData.recordingSources:', JSON.stringify(recordingData.recordingSources));
+          
+          await updateDoc(songRef, updateData);
+          console.log('✅ Phase 4 data stored successfully in database (including URLs and availability)');
+          console.log('- Notable recordings:', recordingData.notableRecordings?.length || 0);
+          console.log('- Current availability:', recordingData.currentAvailability ? 'YES' : 'NO');
+          console.log('- Recording sources:', recordingData.recordingSources?.length || 0);
         } catch (storageError) {
           console.error('❌ Failed to store Phase 4 data:', storageError);
         }
@@ -581,10 +667,14 @@ The explanation should weave together the musical, cultural, and historical aspe
       // Store Phase 5 data to database and mark research complete
       if (params.songId) {
         try {
-          const processedData = parsePhaseResponse(summaryResponse.text, 'current_availability', 'current_availability');
+          // Save the summary/story data correctly
           await updateSongWithResearchData(params.songId, {
-            phase: 'current_availability',
-            data: processedData
+            phase: 'comprehensive_summary',
+            data: {
+              story: summaryData.story || null,
+              inspiration: summaryData.inspiration || null,
+              explanation: summaryData.explanation || null
+            }
           });
           // Mark the research as complete
           await markResearchComplete(params.songId);
@@ -637,7 +727,12 @@ The explanation should weave together the musical, cultural, and historical aspe
       danceRecommendations: songData.danceRecommendations || undefined,
       story: songData.story || undefined,
       inspiration: songData.inspiration || undefined,
-      explanation: songData.explanation || `${correctedTitle} is a tango composition from the Argentine tango tradition.`
+      explanation: songData.explanation || `${correctedTitle} is a tango composition from the Argentine tango tradition.`,
+      // CRITICAL: Include the URL and availability data that was missing!
+      currentAvailability: (songData as any).currentAvailability || undefined,
+      recordingSources: (songData as any).recordingSources || [],
+      alternativeSpellings: (songData as any).alternativeSpellings || [],
+      allSearchFindings: (songData as any).allSearchFindings || []
     };
     
     const metadata: SongMetadata = {

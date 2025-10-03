@@ -83,6 +83,8 @@ const convertSongData = (id: string, data: DocumentData): Song => ({
   musicalAnalysis: data.musicalAnalysis,
   notableRecordings: data.notableRecordings,
   currentAvailability: data.currentAvailability,
+  recordingSources: data.recordingSources,
+  alternativeSpellings: data.alternativeSpellings,
   
   // Research metadata
   researchCompleted: data.researchCompleted || false,
@@ -347,6 +349,12 @@ export const createEnhancedSong = async (
       recommendedForDancing: enhancedData.recommendedForDancing !== undefined ? 
         enhancedData.recommendedForDancing : true,
       danceRecommendations: sanitizeValue(enhancedData.danceRecommendations),
+      
+      // CRITICAL: URL and streaming platform data
+      currentAvailability: enhancedData.currentAvailability || null,
+      recordingSources: enhancedData.recordingSources || [],
+      alternativeSpellings: enhancedData.alternativeSpellings || [],
+      allSearchFindings: enhancedData.allSearchFindings || [],
       
       // Narrative elements from AI
       story: sanitizeValue(enhancedData.story),
@@ -939,12 +947,13 @@ export const markResearchComplete = async (songId: string): Promise<void> => {
  */
 const getPhaseFieldName = (phase: string): string => {
   const phaseMap: { [key: string]: string } = {
-    'phase1': 'titleValidation',
-    'phase2': 'basicInfo',
-    'phase3': 'culturalContext',
-    'phase4': 'musicalAnalysis',
-    'phase5': 'notableRecordings',
-    'phase6': 'currentAvailability'
+    'title_validation': 'titleValidation',
+    'basic_info': 'basicInfo', 
+    'cultural_context': 'culturalContext',
+    'musical_analysis': 'musicalAnalysis',
+    'notable_recordings': 'notableRecordings',
+    'current_availability': 'currentAvailability',
+    'comprehensive_summary': 'comprehensiveSummary'
   };
   return phaseMap[phase] || phase;
 };

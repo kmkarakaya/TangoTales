@@ -280,6 +280,231 @@ export const EnhancedSongDetail: React.FC<EnhancedSongDetailProps> = ({
           !!song.inspiration
         )}
 
+        {/* Notable Recordings */}
+        {renderSection(
+          "Notable Recordings",
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {(song.notableRecordings as any)?.length > 0 ? (
+              (song.notableRecordings as any).map((recording: any, index: number) => (
+                <div key={index} className="bg-white/5 rounded-lg p-4 border border-white/10">
+                  <div className="font-medium text-white/90">{recording.artist}</div>
+                  {recording.year && (
+                    <div className="text-sm text-white/70">Year: {recording.year}</div>
+                  )}
+                  {recording.album && (
+                    <div className="text-sm text-white/70">Album: {recording.album}</div>
+                  )}
+                  {recording.style && (
+                    <div className="text-sm text-white/60">Style: {recording.style}</div>
+                  )}
+                  {recording.availability && (
+                    <div className={`text-sm mt-2 ${
+                      recording.availability === 'currently_available' 
+                        ? 'text-green-400' 
+                        : recording.availability === 'historical' 
+                        ? 'text-amber-400' 
+                        : 'text-white/60'
+                    }`}>
+                      {recording.availability === 'currently_available' ? '✅ Available' : 
+                       recording.availability === 'historical' ? '📜 Historical' : 
+                       recording.availability}
+                    </div>
+                  )}
+                </div>
+              ))
+            ) : (
+              <div className="text-white/60 italic">No notable recordings available yet.</div>
+            )}
+          </div>,
+          (song.notableRecordings as any)?.length > 0
+        )}
+
+        {/* Current Availability & Streaming */}
+        {renderSection(
+          "Listen Now",
+          <div className="space-y-4">
+            {/* Streaming Platforms */}
+            {(song.currentAvailability as any)?.streamingPlatforms?.length > 0 && (
+              <div>
+                <h4 className="text-sm font-medium text-white/80 mb-2">🎵 Streaming Platforms</h4>
+                <div className="flex flex-wrap gap-2">
+                  {(song.currentAvailability as any).streamingPlatforms.map((platform: string, index: number) => (
+                    <span key={index} className="px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-sm border border-green-500/30">
+                      {platform}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Purchase Links */}
+            {(song.currentAvailability as any)?.purchaseLinks?.length > 0 && (
+              <div>
+                <h4 className="text-sm font-medium text-white/80 mb-2">💰 Purchase Options</h4>
+                <div className="flex flex-wrap gap-2">
+                  {(song.currentAvailability as any).purchaseLinks.map((link: string, index: number) => (
+                    <span key={index} className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-full text-sm border border-blue-500/30">
+                      {link}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Free Resources */}
+            {(song.currentAvailability as any)?.freeResources?.length > 0 && (
+              <div>
+                <h4 className="text-sm font-medium text-white/80 mb-2">🆓 Free Resources</h4>
+                <div className="flex flex-wrap gap-2">
+                  {(song.currentAvailability as any).freeResources.map((resource: string, index: number) => (
+                    <span key={index} className="px-3 py-1 bg-purple-500/20 text-purple-400 rounded-full text-sm border border-purple-500/30">
+                      {resource}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Recent Performances */}
+            {(song.currentAvailability as any)?.recentPerformances?.length > 0 && (
+              <div>
+                <h4 className="text-sm font-medium text-white/80 mb-2">🎭 Recent Performances</h4>
+                <div className="space-y-1">
+                  {(song.currentAvailability as any).recentPerformances.map((performance: string, index: number) => (
+                    <div key={index} className="text-sm text-white/70 bg-white/5 rounded px-3 py-2">
+                      {performance}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Show message if no availability data */}
+            {!(song.currentAvailability as any)?.streamingPlatforms?.length && 
+             !(song.currentAvailability as any)?.purchaseLinks?.length && 
+             !(song.currentAvailability as any)?.freeResources?.length && 
+             !(song.currentAvailability as any)?.recentPerformances?.length && (
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-amber-400">🔍</span>
+                  <span className="font-medium text-amber-300">Streaming & Availability Research Needed</span>
+                </div>
+                <p className="text-sm text-white/70">
+                  Click "🤖 Enhance with AI" above to research current streaming platforms, purchase links, and availability for this song.
+                </p>
+              </div>
+            )}
+          </div>,
+          true // Always show Listen Now section
+        )}
+
+        {/* Research Sources & URLs */}
+        {renderSection(
+          "Research Sources",
+          <div className="space-y-4">
+            {/* Alternative Spellings/Titles */}
+            {(song as any).alternativeSpellings?.length > 0 && (
+              <div>
+                <h4 className="text-sm font-medium text-white/80 mb-2">📝 Alternative Spellings</h4>
+                <div className="flex flex-wrap gap-2">
+                  {(song as any).alternativeSpellings.map((spelling: string, index: number) => (
+                    <span key={index} className="px-3 py-1 bg-yellow-500/20 text-yellow-400 rounded-full text-sm border border-yellow-500/30">
+                      {spelling}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Recording Sources with URLs */}
+            {(song as any).recordingSources?.length > 0 && (
+              <div>
+                <h4 className="text-sm font-medium text-white/80 mb-2">🔗 Recording Sources</h4>
+                <div className="space-y-2">
+                  {(song as any).recordingSources.map((source: any, index: number) => (
+                    <div key={index} className="bg-white/5 rounded-lg p-3 border border-white/10">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="font-medium text-white/90">{source.title}</div>
+                          {source.url && (
+                            <a 
+                              href={source.url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-blue-400 hover:text-blue-300 text-sm break-all underline"
+                            >
+                              {source.url}
+                            </a>
+                          )}
+                          {source.content && (
+                            <div className="text-sm text-white/70 mt-1">{source.content}</div>
+                          )}
+                        </div>
+                        {source.type && (
+                          <span className="ml-2 px-2 py-1 bg-gray-500/20 text-gray-400 rounded text-xs">
+                            {source.type}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* All Search Findings with Confidence */}
+            {(song as any).allSearchFindings?.length > 0 && (
+              <div>
+                <h4 className="text-sm font-medium text-white/80 mb-2">🔍 Research Findings</h4>
+                <div className="space-y-3">
+                  {(song as any).allSearchFindings.map((finding: any, index: number) => (
+                    <div key={index} className="bg-white/5 rounded-lg p-3 border border-white/10">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="font-medium text-white/90">Phase: {finding.phase}</div>
+                        <div className={`px-2 py-1 rounded text-xs ${
+                          finding.confidence === 'high' ? 'bg-green-500/20 text-green-400' :
+                          finding.confidence === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                          'bg-red-500/20 text-red-400'
+                        }`}>
+                          {finding.confidence} confidence
+                        </div>
+                      </div>
+                      <div className="text-sm text-white/70 mb-2">Query: "{finding.query}"</div>
+                      <div className="text-sm text-white/80 mb-2">{finding.findings}</div>
+                      {finding.sources?.length > 0 && (
+                        <div className="space-y-1">
+                          <div className="text-xs text-white/60">Sources:</div>
+                          {finding.sources.map((source: any, srcIndex: number) => (
+                            <div key={srcIndex} className="text-xs text-white/60 pl-2">
+                              • {source.title}: {source.snippet}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Show message if no research data */}
+            {!(song as any).alternativeSpellings?.length && 
+             !(song as any).recordingSources?.length && 
+             !(song as any).allSearchFindings?.length && (
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-blue-400">📚</span>
+                  <span className="font-medium text-blue-300">Research Sources & URLs Available Soon</span>
+                </div>
+                <p className="text-sm text-white/70">
+                  Enhanced AI research will populate this section with alternative song titles, recording sources, and comprehensive research findings.
+                </p>
+              </div>
+            )}
+          </div>,
+          true // Always show Research Sources section
+        )}
+
         {/* Full Explanation */}
         {renderSection(
           "Overview",

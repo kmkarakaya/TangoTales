@@ -31,42 +31,162 @@ const DetailedSongModal: React.FC<DetailedSongModalProps> = ({ song, isOpen, onC
 
   const renderOverviewTab = () => (
     <div className="space-y-6">
-      {/* Basic Information */}
-      {song.basicInfo && (
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">Basic Information</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {song.basicInfo.composers && song.basicInfo.composers.length > 0 && (
+      {/* Title Validation Status */}
+      {song.titleValidation && (
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100">Title Validation</h3>
+            <ConfidenceBadge confidence={song.titleValidation.confidence} />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div>
+              <span className="font-medium text-blue-700 dark:text-blue-300">Verified:</span>
+              <span className="ml-2 text-gray-600 dark:text-gray-400">
+                {song.titleValidation.isValid ? '✅ Yes' : '❌ No'}
+              </span>
+            </div>
+            {song.titleValidation.alternativeTitles && song.titleValidation.alternativeTitles.length > 0 && (
               <div>
-                <span className="font-medium text-gray-700 dark:text-gray-300">Composers:</span>
-                <span className="ml-2 text-gray-600 dark:text-gray-400">{song.basicInfo.composers.join(', ')}</span>
-              </div>
-            )}
-            {song.basicInfo.lyricists && song.basicInfo.lyricists.length > 0 && (
-              <div>
-                <span className="font-medium text-gray-700 dark:text-gray-300">Lyricists:</span>
-                <span className="ml-2 text-gray-600 dark:text-gray-400">{song.basicInfo.lyricists.join(', ')}</span>
-              </div>
-            )}
-            {song.basicInfo.yearComposed && (
-              <div>
-                <span className="font-medium text-gray-700 dark:text-gray-300">Year Composed:</span>
-                <span className="ml-2 text-gray-600 dark:text-gray-400">{song.basicInfo.yearComposed}</span>
-              </div>
-            )}
-            {song.basicInfo.period && (
-              <div>
-                <span className="font-medium text-gray-700 dark:text-gray-300">Period:</span>
-                <span className="ml-2 text-gray-600 dark:text-gray-400">{song.basicInfo.period}</span>
-              </div>
-            )}
-            {song.basicInfo.originalKey && (
-              <div>
-                <span className="font-medium text-gray-700 dark:text-gray-300">Original Key:</span>
-                <span className="ml-2 text-gray-600 dark:text-gray-400">{song.basicInfo.originalKey}</span>
+                <span className="font-medium text-blue-700 dark:text-blue-300">Alternative Names:</span>
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {song.titleValidation.alternativeTitles.map((alt, index) => (
+                    <span key={index} className="px-2 py-1 bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded text-xs">
+                      {alt}
+                    </span>
+                  ))}
+                </div>
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Basic Information */}
+      <div>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">Basic Information</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Composers */}
+          {((song.basicInfo?.composers && song.basicInfo.composers.length > 0) || song.composer) && (
+            <div>
+              <span className="font-medium text-gray-700 dark:text-gray-300">Composers:</span>
+              <span className="ml-2 text-gray-600 dark:text-gray-400">
+                {song.basicInfo?.composers?.join(', ') || song.composer}
+              </span>
+            </div>
+          )}
+
+          {/* Lyricists */}
+          {((song.basicInfo?.lyricists && song.basicInfo.lyricists.length > 0) || song.lyricist) && (
+            <div>
+              <span className="font-medium text-gray-700 dark:text-gray-300">Lyricists:</span>
+              <span className="ml-2 text-gray-600 dark:text-gray-400">
+                {song.basicInfo?.lyricists?.join(', ') || song.lyricist}
+              </span>
+            </div>
+          )}
+
+          {/* Year Composed */}
+          {(song.basicInfo?.yearComposed || song.yearComposed) && (
+            <div>
+              <span className="font-medium text-gray-700 dark:text-gray-300">Year Composed:</span>
+              <span className="ml-2 text-gray-600 dark:text-gray-400">
+                {song.basicInfo?.yearComposed || song.yearComposed}
+              </span>
+            </div>
+          )}
+
+          {/* Period */}
+          {(song.basicInfo?.period || song.period) && (
+            <div>
+              <span className="font-medium text-gray-700 dark:text-gray-300">Period:</span>
+              <span className="ml-2 text-gray-600 dark:text-gray-400">
+                {song.basicInfo?.period || song.period}
+              </span>
+            </div>
+          )}
+
+          {/* Musical Form */}
+          {song.musicalForm && (
+            <div>
+              <span className="font-medium text-gray-700 dark:text-gray-300">Musical Form:</span>
+              <span className="ml-2 text-gray-600 dark:text-gray-400">{song.musicalForm}</span>
+            </div>
+          )}
+
+          {/* Original Key */}
+          {song.basicInfo?.originalKey && (
+            <div>
+              <span className="font-medium text-gray-700 dark:text-gray-300">Original Key:</span>
+              <span className="ml-2 text-gray-600 dark:text-gray-400">{song.basicInfo.originalKey}</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Themes */}
+      {song.themes && song.themes.length > 0 && (
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">Themes</h3>
+          <div className="flex flex-wrap gap-2">
+            {song.themes.map((theme, index) => (
+              <span key={index} className="px-3 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded-full text-sm">
+                {theme}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Dance Information */}
+      {(song.recommendedForDancing !== undefined || song.danceStyle?.length || song.danceRecommendations) && (
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">Dance Information</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {song.recommendedForDancing !== undefined && (
+              <div>
+                <span className="font-medium text-gray-700 dark:text-gray-300">Recommended for Dancing:</span>
+                <span className="ml-2 text-gray-600 dark:text-gray-400">
+                  {song.recommendedForDancing ? '✅ Yes' : '❌ No'}
+                </span>
+              </div>
+            )}
+            {song.danceStyle && song.danceStyle.length > 0 && (
+              <div>
+                <span className="font-medium text-gray-700 dark:text-gray-300">Dance Styles:</span>
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {song.danceStyle.map((style, index) => (
+                    <span key={index} className="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded text-sm">
+                      {style}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          {song.danceRecommendations && (
+            <div className="mt-3">
+              <span className="font-medium text-gray-700 dark:text-gray-300">Dance Recommendations:</span>
+              <p className="mt-1 text-gray-600 dark:text-gray-400">{song.danceRecommendations}</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Story and Inspiration */}
+      {(song.story || song.inspiration) && (
+        <div className="space-y-4">
+          {song.story && (
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">Story</h3>
+              <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{song.story}</p>
+            </div>
+          )}
+          {song.inspiration && (
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">Inspiration</h3>
+              <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{song.inspiration}</p>
+            </div>
+          )}
         </div>
       )}
 
