@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useSearch } from '../../hooks/useSearch';
 import { Song } from '../../types/song';
-import { LoadingSpinner, ErrorMessage, StarRating } from '../common';
+import { LoadingSpinner, ErrorMessage, StarRating, AIResearchProgress } from '../common';
 import { EnhancedSongDetail } from '../songs/EnhancedSongDetail';
 import { addRating } from '../../services/firestore';
+import type { ProgressUpdate } from '../../services/enhancedGeminiWithProgress';
 
 interface EnhanceWithAIButtonProps {
   songs: Song[];
@@ -18,27 +19,36 @@ const EnhanceWithAIButton: React.FC<EnhanceWithAIButtonProps> = ({
 }) => {
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [enhancementError, setEnhancementError] = useState<string | null>(null);
+  const [currentProgress, setCurrentProgress] = useState<ProgressUpdate | null>(null);
+  const [currentSong, setCurrentSong] = useState<string>('');
   
   const handleEnhanceWithAI = async () => {
     if (songs.length === 0) return;
     
     setIsEnhancing(true);
     setEnhancementError(null);
+    setCurrentProgress(null);
 
     try {
       // Import enhanced services dynamically
-      const { songInformationService } = await import('../../services/enhancedGemini');
+      const { songInformationService } = await import('../../services/enhancedGeminiWithProgress');
       const { updateSongWithEnhancedData } = await import('../../services/firestore');
       
       // Process each song
-      for (const song of songs) {
+      for (let i = 0; i < songs.length; i++) {
+        const song = songs[i];
+        setCurrentSong(`${song.title} (${i + 1}/${songs.length})`);
+        
         try {
           console.log(`🤖 Enhancing song: "${song.title}"`);
           
-          // Research the song with enhanced AI
-          const enhancedResult = await songInformationService.getEnhancedSongInformation({ 
-            title: song.title 
-          });
+          // Research the song with enhanced AI and progress tracking
+          const enhancedResult = await songInformationService.getEnhancedSongInformation(
+            { title: song.title }, 
+            (progress: ProgressUpdate) => {
+              setCurrentProgress(progress);
+            }
+          );
           
           // Update the song in the database
           await updateSongWithEnhancedData(song.id, enhancedResult, {
@@ -55,7 +65,9 @@ const EnhanceWithAIButton: React.FC<EnhanceWithAIButtonProps> = ({
         }
       }
       
-      // Refresh the page to show enhanced results
+      // Clear progress and refresh the page to show enhanced results
+      setCurrentProgress(null);
+      setCurrentSong('');
       onEnhancementComplete();
       
     } catch (error) {
@@ -80,6 +92,17 @@ const EnhanceWithAIButton: React.FC<EnhanceWithAIButtonProps> = ({
         </div>
       )}
       
+      {isEnhancing && currentProgress && (
+        <div className="bg-blue-50 p-4 rounded-lg border">
+          <div className="mb-2">
+            <span className="text-sm font-medium text-blue-800">
+              Researching: {currentSong}
+            </span>
+          </div>
+          <AIResearchProgress currentStep={currentProgress} />
+        </div>
+      )}
+      
       <button 
         onClick={handleEnhanceWithAI}
         disabled={isEnhancing}
@@ -92,7 +115,7 @@ const EnhanceWithAIButton: React.FC<EnhanceWithAIButtonProps> = ({
         {isEnhancing ? (
           <>
             <LoadingSpinner size="sm" className="inline mr-2" />
-            🤖 Enhancing...
+            {currentProgress ? 'AI Research in Progress...' : '🤖 Enhancing...'}
           </>
         ) : (
           <>
@@ -129,22 +152,27 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   const [selectedSong, setSelectedSong] = useState<Song | null>(null);
   const [enhancingSong, setEnhancingSong] = useState<string | null>(null);
   const [enhancedSongs, setEnhancedSongs] = useState<Map<string, Song>>(new Map());
+  const [modalProgress, setModalProgress] = useState<ProgressUpdate | null>(null);
 
   // Handle enhancement that keeps modal open and updates content
   const handleEnhanceSongInModal = async (song: Song) => {
     setEnhancingSong(song.id);
+    setModalProgress(null);
     
     try {
       // Import enhanced services dynamically
-      const { songInformationService } = await import('../../services/enhancedGemini');
+      const { songInformationService } = await import('../../services/enhancedGeminiWithProgress');
       const { updateSongWithEnhancedData, getSongById } = await import('../../services/firestore');
       
       console.log(`🤖 Enhancing song: "${song.title}"`);
       
-      // Research the song with enhanced AI
-      const enhancedResult = await songInformationService.getEnhancedSongInformation({ 
-        title: song.title 
-      });
+      // Research the song with enhanced AI and progress tracking
+      const enhancedResult = await songInformationService.getEnhancedSongInformation(
+        { title: song.title },
+        (progress: ProgressUpdate) => {
+          setModalProgress(progress);
+        }
+      );
       
       // Update the song in the database
       await updateSongWithEnhancedData(song.id, enhancedResult, {
@@ -171,6 +199,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
       console.error(`Failed to enhance song "${song.title}":`, error);
     } finally {
       setEnhancingSong(null);
+      setModalProgress(null);
     }
   };
 
@@ -216,13 +245,23 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     return (
       <div className={`${className}`}>
         {selectedSong ? (
-          <EnhancedSongDetail 
-            song={enhancedSongs.get(selectedSong.id) || selectedSong} 
-            onClose={() => setSelectedSong(null)}
-            onEnhance={() => handleEnhanceSongInModal(selectedSong)}
-            isEnhancing={enhancingSong === selectedSong.id}
-            className="max-w-4xl mx-auto"
-          />
+          <>
+            {enhancingSong === selectedSong.id && modalProgress && (
+              <div className="fixed top-4 right-4 bg-white border border-blue-300 p-4 rounded-lg shadow-lg z-50 max-w-sm">
+                <div className="text-sm font-medium text-blue-800 mb-2">
+                  Enhancing: {selectedSong.title}
+                </div>
+                <AIResearchProgress currentStep={modalProgress} />
+              </div>
+            )}
+            <EnhancedSongDetail 
+              song={enhancedSongs.get(selectedSong.id) || selectedSong} 
+              onClose={() => setSelectedSong(null)}
+              onEnhance={() => handleEnhanceSongInModal(selectedSong)}
+              isEnhancing={enhancingSong === selectedSong.id}
+              className="max-w-4xl mx-auto"
+            />
+          </>
         ) : (
           <SearchResultsList 
             results={results.map(song => enhancedSongs.get(song.id) || song)} 
@@ -586,6 +625,7 @@ interface NoResultsFoundProps {
 const NoResultsFound: React.FC<NoResultsFoundProps> = ({ query, onRefreshSearch, onQueryChange }) => {
   const [isResearching, setIsResearching] = React.useState(false);
   const [researchError, setResearchError] = React.useState<string | null>(null);
+  const [researchProgress, setResearchProgress] = React.useState<ProgressUpdate | null>(null);
   
   const handleResearchWithAI = async () => {
     if (!query.trim()) {
@@ -595,21 +635,46 @@ const NoResultsFound: React.FC<NoResultsFoundProps> = ({ query, onRefreshSearch,
 
     setIsResearching(true);
     setResearchError(null);
+    setResearchProgress(null);
 
     try {
-      // Import the new user-controlled AI creation function
-      const { createSongWithAI } = await import('../../services/firestore');
+      // Import the enhanced AI service with progress tracking
+      const { songInformationService } = await import('../../services/enhancedGeminiWithProgress');
+      const { createEnhancedSong } = await import('../../services/firestore');
       
-      // Create song with AI using the new user-controlled approach
-      const resultSong = await createSongWithAI(query.trim());
+      console.log(`🤖 Starting AI research for: "${query}"`);
       
-      console.log('Song researched and created successfully with AI:', resultSong);
+      // Research the song with AI and progress tracking
+      const aiResult = await songInformationService.getEnhancedSongInformation(
+        { title: query.trim() },
+        (progress: ProgressUpdate) => {
+          setResearchProgress(progress);
+        }
+      );
+      
+      // Create the song in database using enhanced data
+      const finalTitle = aiResult.correctedTitle || query.trim();
+      console.log(`🏷️ Using title for database: "${finalTitle}" (original: "${query}")`);
+      
+      const songId = await createEnhancedSong(
+        finalTitle,
+        aiResult,
+        {
+          aiResponseQuality: 'good',
+          needsManualReview: false,
+          lastAIUpdate: new Date(),
+          retryCount: 0,
+          ...aiResult.metadata
+        }
+      );
+      
+      console.log('✅ Song researched and created successfully with AI:', songId);
       
       // If we got a song result and it has a different title than what user searched for,
       // update the search query to the corrected title so user sees the correct results
-      if (resultSong && resultSong.title && resultSong.title.toLowerCase() !== query.trim().toLowerCase()) {
-        console.log(`🔄 Updating search query from "${query}" to corrected title "${resultSong.title}"`);
-        onQueryChange(resultSong.title);
+      if (finalTitle.toLowerCase() !== query.trim().toLowerCase()) {
+        console.log(`🔄 Updating search query from "${query}" to corrected title "${finalTitle}"`);
+        onQueryChange(finalTitle);
       } else {
         // Same title or no correction needed, just refresh current search
         onRefreshSearch();
@@ -629,6 +694,7 @@ const NoResultsFound: React.FC<NoResultsFoundProps> = ({ query, onRefreshSearch,
       }
     } finally {
       setIsResearching(false);
+      setResearchProgress(null);
     }
   };
 
@@ -666,6 +732,16 @@ const NoResultsFound: React.FC<NoResultsFoundProps> = ({ query, onRefreshSearch,
         </>
       )}
       
+      {/* AI Research Progress */}
+      {isResearching && researchProgress && (
+        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-4 max-w-lg mx-auto">
+          <div className="text-sm font-medium text-blue-800 mb-2">
+            Researching: {query}
+          </div>
+          <AIResearchProgress currentStep={researchProgress} />
+        </div>
+      )}
+
       {/* AI Research Button */}
       <div className="space-y-3">
         
@@ -687,7 +763,7 @@ const NoResultsFound: React.FC<NoResultsFoundProps> = ({ query, onRefreshSearch,
           {isResearching ? (
             <>
               <LoadingSpinner size="sm" className="inline mr-2" />
-              🎵 Researching...
+              {researchProgress ? 'AI Research in Progress...' : '🎵 Researching...'}
             </>
           ) : (
             '🚀 Start AI Research'
