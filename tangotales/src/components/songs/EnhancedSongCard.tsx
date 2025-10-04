@@ -307,28 +307,14 @@ export const EnhancedSongCard: React.FC<EnhancedSongCardProps> = ({
         {/* Quick actions */}
         <div className="mt-4 pt-3 border-t border-gray-100 flex justify-between items-center">
           <button 
-            className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors duration-200 group"
+            className="px-3 py-1 rounded-lg text-sm font-medium transition-all bg-blue-600 hover:bg-blue-700 text-white hover:scale-105"
             onClick={(e) => {
               e.stopPropagation();
               handleCardClick();
             }}
             aria-label="View full song details"
           >
-            <span className="hidden sm:inline">View Details</span>
-            <svg 
-              className="w-5 h-5 group-hover:scale-110 transition-transform duration-200" 
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={2} 
-                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
-              />
-            </svg>
+            More
           </button>
           
           {song?.currentAvailability?.streamingPlatforms.length && (
