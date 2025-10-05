@@ -2,6 +2,9 @@
  * Integration test for rate limiting functionality in enhancedGeminiWithProgress
  */
 
+// Make this file a module so TypeScript's isolatedModules doesn't treat it as a global script
+export {};
+
 // Mock the AI client to avoid real API calls
 jest.mock('../utils/config', () => ({
   config: {
@@ -91,7 +94,7 @@ describe('Rate Limiting Integration', () => {
     
     // Set up timing
     const startTime = Date.now();
-    
+
     // Verify that the static properties exist (this tests our rate limiting structure)
     expect(SongInformationService.activeRequests).toBeDefined();
     expect(SongInformationService.lastRequestTime).toBeDefined();
