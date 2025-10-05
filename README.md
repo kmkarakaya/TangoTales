@@ -119,6 +119,8 @@ TangoTales features a professional desktop-first interface with emphasis on clar
 - **Result Caching**: Avoid redundant database calls for better performance
 - **Popular Songs**: Discover trending songs with one-click access
 - **User-Controlled AI Research**: "Search with AI" button for non-existent songs - users choose when to generate content
+ - **Enhanced Search UI & Service**: An `EnhancedSearchPage` and `EnhancedSearchService` provide advanced filtering, popular-term suggestions, and search-quality scoring. The `useEnhancedSearch` hook exposes debounced searches, suggestions, and popular-term retrieval for components.
+ - **AI progress UI**: The search results and research flows use an `AIResearchProgress` component to display multi-step progress while an AI research job runs (uses `enhancedGeminiWithProgress` service to stream progress updates).
 
 ### 🤖 **AI-Powered Research** ✅ **USER-CONTROLLED**
 
@@ -133,6 +135,7 @@ TangoTales features a professional desktop-first interface with emphasis on clar
 - **Error Handling**: Graceful fallbacks with retry options for failed research attempts
 - **Secure Configuration**: Environment variables for API keys with GitHub Secrets integration
 - **Cost Optimization**: AI generation only triggered by explicit user action - no surprise API costs
+ - **Progress & Streaming**: AI research uses an enhanced Gemini integration (`enhancedGeminiWithProgress`) that streams progress updates and supports robust JSON repair and fallback generation. The UI surfaces these progress updates via `AIResearchProgress`.
 
 ### 🎭 **Song Discovery** ✅
 
@@ -188,6 +191,9 @@ TangoTales features a sophisticated component architecture for rich user experie
 - **🔧 JSON Repair Algorithms**: Advanced parsing and repair for malformed AI responses with fallback generation
 - **📊 Quality Assessment**: AI response evaluation system with excellent/good/partial/failed classification
 - **🎵 Rich Sample Data**: 169-line comprehensive tango song database with full metadata structure
+ - **⏱ AIResearchProgress**: Reusable component for rendering multi-step AI research progress in both inline and modal contexts
+ - **🔎 EnhancedSearchService & Hook**: Backend service and `useEnhancedSearch` hook powering advanced filtering, suggestions, and popular-term metrics
+ - **📈 AnalyticsDashboardPage**: Admin-facing analytics page that surfaces popular searches, usage metrics, and performance summaries
 
 ### 🛡️ **Database Integrity Protection**
 
@@ -352,7 +358,12 @@ src/
 ├── services/            # API and Firebase services
 │   ├── firebase.ts
 │   ├── firestore.ts
-│   └── gemini.ts
+│   ├── enhancedSearch.ts
+│   ├── enhancedGemini.ts
+│   ├── enhancedGeminiWithProgress.ts
+│   ├── responseParser.ts
+│   ├── performance.ts
+│   └── analytics.ts
 ├── utils/               # Utility functions
 │   ├── textFormatter.ts
 │   └── aiResponseParser.ts
@@ -362,7 +373,9 @@ src/
 │   └── song.ts
 ├── pages/               # Page components
 │   ├── HomePage.tsx
-│   └── SearchPage.tsx
+│   ├── SearchPage.tsx
+│   ├── EnhancedSearchPage.tsx   # Advanced search UI with filters and suggestions
+│   └── AnalyticsDashboardPage.tsx  # Admin/analytics dashboard for search & usage metrics
 └── styles/              # Global CSS and theme
     └── theme.ts
 ```
@@ -398,6 +411,49 @@ interface Song {
   createdAt: Timestamp;         // Creation timestamp
   searchCount: number;          // How many times searched
   averageRating: number;        // Average user rating (0-5)
+```
+
+## Recent changes
+
+- 2025-10-05: Updated unit test `tangotales/src/App.test.tsx` to assert the site title "TangoTales" instead of the default CRA sample text. See `status.md` for details.
+
+## Developer notes (tests)
+
+- When running tests for the React app in `tangotales`, you may encounter module resolution errors if dependencies are not installed or the environment differs from the one used to prepare the repo. A recent test run produced the following error:
+
+  - "Cannot find module 'react-router-dom' from 'src/App.tsx'"
+
+- The project lists `react-router-dom` in `tangotales/package.json`. Typical fixes:
+
+  1. Ensure dependencies are installed for the React app:
+
+     ```powershell
+     cd "C:\Codes\Tango Songs\tangotales" ; npm ci
+     ```
+
+  2. If you prefer not to install additional runtime deps in your test environment, mock `react-router-dom` for Jest by adding a lightweight mock in `tangotales/src/setupTests.ts`, for example:
+
+     ```ts
+     // ...existing code in setupTests.ts
+     // Mock react-router-dom to avoid importing the full router in unit tests
+     jest.mock('react-router-dom', () => {
+       const React = require('react');
+       return {
+         BrowserRouter: ({ children }: { children: React.ReactNode }) => React.createElement(React.Fragment, null, children),
+         Routes: ({ children }: { children: React.ReactNode }) => React.createElement(React.Fragment, null, children),
+         Route: () => null,
+         Link: ({ children }: any) => React.createElement('a', null, children),
+       };
+     });
+     ```
+
+  3. After installing deps or adding the mock, re-run the tests:
+
+     ```powershell
+     cd "C:\Codes\Tango Songs\tangotales" ; npm test -- --watchAll=false
+     ```
+
+- If you want, I can either install the missing dependency in the project or add the Jest mock and re-run tests. Tell me which you'd prefer.
   totalRatings: number;         // Total number of ratings
   tags: string[];               // Genre, era, themes, etc.
 }

@@ -5,8 +5,12 @@ import { parsePhaseResponse } from './responseParser';
 import { doc, updateDoc, Timestamp } from 'firebase/firestore';
 import { db } from './firebase';
 
-// Initialize Gemini AI client with error handling
 let ai: GoogleGenAI | null = null;
+
+// Non-sensitive presence check (dev only)
+if (process.env.NODE_ENV === 'development') {
+  console.log('✅ GEMINI DEBUG - API key present:', !!config.gemini.apiKey);
+}
 
 try {
   if (!config.gemini.apiKey) {

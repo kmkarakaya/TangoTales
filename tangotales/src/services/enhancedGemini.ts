@@ -4,11 +4,10 @@ import { SongMetadata, Recording, Performer } from '../types/song';
 
 // Debug logging for Gemini API configuration
 console.log('🔍 GEMINI DEBUG - Configuration check:');
-console.log('- API Key exists:', !!config.gemini.apiKey);
-console.log('- API Key length:', config.gemini.apiKey?.length || 0);
-console.log('- API Key prefix:', config.gemini.apiKey?.substring(0, 10) + '...' || 'none');
-console.log('- Environment:', process.env.NODE_ENV);
-console.log('- All env vars with GEMINI:', Object.keys(process.env).filter(k => k.includes('GEMINI')));
+if (process.env.NODE_ENV === 'development') {
+  console.log('- API Key present:', !!config.gemini.apiKey);
+  console.log('- Environment:', process.env.NODE_ENV);
+}
 
 // Initialize Gemini AI client with error handling
 let ai: GoogleGenAI | null = null;

@@ -250,3 +250,9 @@ npm start
 - Always navigate to the React app directory BEFORE running npm commands
 
 **Remember**: Maintain free-tier Firebase constraints - no server-side code, Cloud Functions, or Admin SDK usage.
+
+## Secrets & CI
+
+- Store all production API keys and deployment credentials in GitHub Actions Secrets. Do NOT commit secrets to the repository or print them in logs.
+- Never log secret values, partial keys, or key lengths from production code or build scripts; log only presence/absence (for example: "Gemini key: present") and only in development environments when absolutely necessary.
+- For local development, use `.env.local` with non-production keys and never commit `.env` files.
