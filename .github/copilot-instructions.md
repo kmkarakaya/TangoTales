@@ -73,7 +73,8 @@ interface Rating {
 
 - Gemini API for structured JSON song explanations
 - Auto-save AI responses to Firestore with metadata
-- Client-side rate limiting and graceful fallbacks
+- ✅ Client-side rate limiting implemented (max 1 concurrent, 2-second delays)
+- Graceful fallbacks and error handling
 
 ### UI/UX Requirements
 

@@ -617,6 +617,7 @@ Your app will be available at `https://your-project-id.web.app`
 - [X] Search functionality (database-first with caching)
 - [ ] Enhanced song explanation display with formatting 🔄 NEXT
 - [X] Gemini AI integration for new song research ✅ **USER-CONTROLLED COMPLETE**
+- [X] Client-side rate limiting for AI requests ✅ **MVP COMPLETE** (max 1 concurrent, 2-second delays)
 - [X] Error handling and loading states
 
 ### Phase 3: Discovery Features 📋 PLANNED

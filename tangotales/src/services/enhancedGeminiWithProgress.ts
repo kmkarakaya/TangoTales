@@ -124,6 +124,10 @@ const PROGRESS_PHASES = [
 class SongInformationService {
   private chatSessions = new Map<string, any>();
   
+  // Rate limiting state
+  private static activeRequests = 0;
+  private static lastRequestTime = 0;
+  
   async getEnhancedSongInformation(
     params: EnhancedSongParams, 
     progressCallback?: ProgressCallback,
@@ -134,17 +138,39 @@ class SongInformationService {
     console.log('- AI client status:', ai ? 'INITIALIZED' : 'NULL');
     console.log('- Progress callback:', progressCallback ? 'PROVIDED' : 'NOT_PROVIDED');
     
+    // Rate limiting check
+    if (SongInformationService.activeRequests >= config.rateLimits.MAX_CONCURRENT_AI_REQUESTS) {
+      const error = new Error('Another AI request is in progress. Please wait for it to complete before starting a new research.');
+      console.warn('⚠️ RATE LIMIT - Concurrent request blocked:', error.message);
+      throw error;
+    }
+    
+    // Delay check
+    const now = Date.now();
+    const timeSinceLastRequest = now - SongInformationService.lastRequestTime;
+    if (timeSinceLastRequest < config.rateLimits.MIN_REQUEST_DELAY_MS) {
+      const waitTime = config.rateLimits.MIN_REQUEST_DELAY_MS - timeSinceLastRequest;
+      console.log(`⏳ RATE LIMIT - Enforcing delay: ${waitTime}ms`);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
+    
     // Check if AI client is available
     if (!ai) {
       console.error('❌ GEMINI DEBUG - AI client is null, cannot proceed');
       throw new Error('Gemini AI client not initialized. Check API key configuration.');
     }
     
-    const sessionKey = this.normalizeTitle(params.title);
-    console.log('- Session key:', sessionKey);
-    console.log('- Existing sessions:', this.chatSessions.size);
+    // Increment active requests counter and update last request time
+    SongInformationService.activeRequests++;
+    SongInformationService.lastRequestTime = Date.now();
+    console.log(`🔄 RATE LIMIT - Active requests: ${SongInformationService.activeRequests}`);
     
     try {
+      const sessionKey = this.normalizeTitle(params.title);
+      console.log('- Session key:', sessionKey);
+      console.log('- Existing sessions:', this.chatSessions.size);
+      
+      try {
       if (!this.chatSessions.has(sessionKey)) {
         console.log('📝 GEMINI DEBUG - Creating new chat session');
         
@@ -178,6 +204,11 @@ class SongInformationService {
       
       return await this.gatherInformationWithChat(chat, params, progressCallback);
       
+      } catch (innerError) {
+        // Re-throw inner errors
+        throw innerError;
+      }
+      
     } catch (error) {
       console.error('❌ GEMINI DEBUG - Error in getEnhancedSongInformation:');
       console.error('- Error type:', error?.constructor.name);
@@ -186,6 +217,10 @@ class SongInformationService {
       
       // Re-throw with more context
       throw new Error(`Failed to get enhanced song information for "${params.title}": ${(error as Error)?.message}`);
+    } finally {
+      // Always decrement active requests counter
+      SongInformationService.activeRequests--;
+      console.log(`🔄 RATE LIMIT - Request completed. Active requests: ${SongInformationService.activeRequests}`);
     }
   }
 

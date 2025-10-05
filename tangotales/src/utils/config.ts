@@ -19,6 +19,11 @@ export const config = {
   app: {
     version: process.env.REACT_APP_VERSION || '1.0.0',
     environment: process.env.REACT_APP_ENVIRONMENT || 'development',
+  },
+  // Rate limiting configuration for AI requests
+  rateLimits: {
+    MAX_CONCURRENT_AI_REQUESTS: 1,
+    MIN_REQUEST_DELAY_MS: 2000
   }
 };
 

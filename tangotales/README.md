@@ -60,6 +60,7 @@ TangoTales now features intelligent song research powered by Google Gemini AI:
 - **Response Format**: Structured JSON with title, date, meaning, cultural notes, sources
 - **Auto-Save**: Researched songs automatically saved to Firestore
 - **Smart Ordering**: New songs appear first in search results (ordered by creation date)
+- **Rate Limiting**: Client-side protection against API abuse (max 1 concurrent request, 2-second delays)
 - **Error Handling**: Graceful fallbacks with retry options
 - **Security**: API keys managed via environment variables and GitHub Secrets
 
@@ -68,6 +69,7 @@ TangoTales now features intelligent song research powered by Google Gemini AI:
 - **Loading States**: Beautiful loading indicators during research
 - **Context Preservation**: Search query and results maintained throughout the process
 - **Immediate Visibility**: Newly researched songs appear at the top of search results
+- **Smart Rate Limiting**: Prevents multiple simultaneous requests with clear user feedback
 
 ### Installation and Development
 
