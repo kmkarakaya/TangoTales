@@ -1,110 +1,58 @@
+<!-- Copilot should follow every rule in this file for all code suggestions in this repository. -->
+
 # GitHub Copilot Instructions
 
-## Project Context: TangoTales
+## Project Context
 
-**Tech Stack**: React 18, TypeScript, Tailwind CSS, Firebase (Firestore, Hosting), Gemini AI API
-**Constraint**: Free-tier Firebase only, client-side logic, responsive design
+TangoTales — React (v18), TypeScript, Tailwind CSS, Firebase (Firestore, Hosting), Gemini AI API.
+Constraint: use free-tier Firebase features only; keep logic client-side.
 
-## Code Generation Guidelines
+## Priorities
 
-### React Best Practices
+- Docs: short comments and high-level doc updates when adding features.
+- Firebase: validate schema or workflow changes with Firebase MCP before committing.
+- Tests: Jest for unit logic; Playwright MCP for UI/responsive checks.
+- PRs: keep changes small and documented.
 
-- Functional components with hooks (useState, useEffect, useContext, custom hooks)
-- TypeScript interfaces for all props and state
-- Small, reusable components with proper error boundaries
-- React.memo for performance optimization
+## React & Code Guidelines
 
-### Firebase Integration
+- Prefer functional components and React Hooks.
+- Export TypeScript interfaces for shared shapes.
+- Keep components small; share UI in `src/components/common`.
+- Provide loading and error states for network code.
+- React.memo for performance optimization.
 
-- Firebase v9+ modular SDK, client-side operations only
-- Efficient Firestore queries (avoid N+1 patterns)
-- Proper loading states and error handling
-- Client-side caching to reduce Firebase reads
+## Firebase rules (free-tier)
 
-### Code Structure
-
-```
-src/
-├── components/
-│   ├── common/          # Button, Loading, ErrorBoundary
-│   ├── search/          # SearchBar, SearchResults, AutoSuggest
-│   ├── songs/           # SongCard, SongDetail, RatingSystem
-│   └── navigation/      # AlphabetNav, Sidebar, Header
-├── hooks/               # useFirestore, useGemini, useSearch
-├── services/            # firebase.ts, gemini.ts, storage.ts
-├── types/               # Song, Rating, SearchResult interfaces
-└── contexts/            # SongContext, ThemeContext, SearchContext
-```
-
-### Database Schema
-
-```typescript
-interface Song {
-  id: string;
-  title: string;
-  explanation: string;
-  sources: string[];
-  createdAt: Timestamp;
-  searchCount: number;
-  averageRating: number;
-  totalRatings: number;
-  tags: string[];
-}
-
-interface Rating {
-  id: string;
-  songId: string;
-  rating: number;
-  comment?: string;
-  timestamp: Timestamp;
-}
-```
+- Never use Firebase Admin SDK or Cloud Functions in this repo.
+- Use Firebase v9+ modular SDK on the client only.
+- Efficient Firestore queries (avoid N+1 patterns).
+- Add loading/error handling and client-side caching where helpful.
 
 ## Key Features to Implement
 
 ### Song Search & Discovery
 
-- Debounced search with auto-suggestions from Firestore
-- A-Z filtering with URL routing for deep linking
-- Popular songs sidebar (query by searchCount)
-- Random discovery with efficient document selection
+- Debounced search with auto-suggestions from Firestore.
+- A-Z filtering with URL routing for deep linking.
+- Popular songs sidebar (query by `searchCount`).
+- Random discovery with efficient document selection.
 
-### AI Integration
+### MCP Tools Available
 
-- Gemini API for structured JSON song explanations
-- Auto-save AI responses to Firestore with metadata
-- ✅ Client-side rate limiting implemented (max 1 concurrent, 2-second delays)
-- Graceful fallbacks and error handling
+#### Firebase MCP
 
-### UI/UX Requirements
+- **MANDATORY Usage**: All database operations MUST use Firebase MCP tools.
 
-- Desktop-first responsive design with Tailwind CSS
-- Loading states with skeleton screens
-- Accessibility (ARIA labels, keyboard navigation)
-- Dark/light theme support
-- Error boundaries for API-dependent components
+##### Core Firebase Tools
 
-## MCP Tools Available
+- `activate_firebase_firebase_tools` — Project management, authentication, deployment.
+- `activate_firebase_firestore_tools` — Database operations, queries, rules management.
+- `activate_firebase_realtimedatabase_tools` — Real-time data sync (if needed).
+- `activate_firebase_storage_tools` — File storage operations.
+- `activate_firebase_authentication_tools` — User management.
 
-### Context7 Documentation
-
-- `mcp_context7_resolve-library-id` + `mcp_context7_get-library-docs`
-- Use for React, Firebase, Tailwind CSS documentation
-- Essential for understanding current patterns and best practices
-
-### Firebase MCP - PRIMARY DATABASE TOOL
-
-**MANDATORY Usage**: All database operations MUST use Firebase MCP tools
-
-#### Core Firebase Tools
-
-- `activate_firebase_firebase_tools` - Project management, authentication, deployment
-- `activate_firebase_firestore_tools` - Database operations, queries, rules management
-- `activate_firebase_realtimedatabase_tools` - Real-time data sync (if needed)
-- `activate_firebase_storage_tools` - File storage operations
-- `activate_firebase_authentication_tools` - User management
-
-#### Implementation Requirements
+##### Implementation Requirements
 
 ```typescript
 // Always activate Firebase tools before database operations
@@ -113,28 +61,28 @@ await activate_firebase_firestore_tools();
 
 // Use for:
 // - Schema validation and updates
-// - Security rules testing and deployment  
+// - Security rules testing and deployment
 // - Data migration scripts
 // - Query optimization and testing
 // - Real-time listener setup
 // - Performance monitoring
 ```
 
-### Playwright Browser Testing - PRIMARY TESTING TOOL
+#### Playwright Browser Testing
 
-**MANDATORY Usage**: All UI testing MUST use Playwright MCP tools
+- **MANDATORY Usage**: All UI testing MUST use Playwright MCP tools.
 
-#### Core Playwright Tools
+##### Core Playwright Tools
 
-- `activate_playwright_browser_navigation` - Page navigation and routing
-- `activate_playwright_browser_interaction` - User interactions (click, type, hover)
-- `activate_playwright_browser_screenshots_and_snapshots` - Visual documentation
-- `activate_playwright_browser_waiting` - Async operation handling
-- `activate_playwright_browser_evaluation` - JavaScript execution and debugging
-- `activate_playwright_browser_window_management` - Tab and viewport management
-- `activate_playwright_browser_console_and_network` - Debugging and monitoring
+- `activate_playwright_browser_navigation` — Page navigation and routing.
+- `activate_playwright_browser_interaction` — User interactions (click, type, hover).
+- `activate_playwright_browser_screenshots_and_snapshots` — Visual documentation.
+- `activate_playwright_browser_waiting` — Async operation handling.
+- `activate_playwright_browser_evaluation` — JavaScript execution and debugging.
+- `activate_playwright_browser_window_management` — Tab and viewport management.
+- `activate_playwright_browser_console_and_network` — Debugging and monitoring.
 
-#### Testing Workflow Requirements
+##### Testing Workflow Requirements
 
 ```typescript
 // Activate all necessary Playwright tools at start
@@ -150,103 +98,27 @@ await activate_playwright_browser_screenshots_and_snapshots();
 // 5. Test error scenarios and edge cases
 ```
 
-### GitHub MCP
+## Implementation Standards
 
-- Repository operations, PR management, issue tracking
-- Activate appropriate categories as needed
-- Use for deployment coordination and version control
+### Database Operations
 
-## Development Priorities
+- **NEVER** use direct Firebase SDK calls without Firebase MCP validation.
+- **ALWAYS** test security rules through Firebase MCP before deployment.
+- **REQUIRED**: Use Firebase MCP for all schema changes and migrations.
+- **MANDATORY**: Validate query performance through Firebase MCP tools.
 
-1. **Documentation**: Context7 for current React/Firebase patterns
-2. **Firebase**: Firebase MCP for database operations and hosting
-3. **Testing**: Playwright for responsive design validation
-4. **Collaboration**: GitHub MCP for repository management
+### UI Development
 
-## Testing Requirements
-
-**MANDATORY**: After any development work, you MUST test the UI using Playwright MCP tools:
-
-1. **Activate Playwright Tools**: Use `activate_playwright_*` functions to access browser testing capabilities
-2. **UI Validation**: Test responsive design, component functionality, and user interactions
-3. **Cross-browser Testing**: Verify compatibility across different viewport sizes
-4. **Error Scenarios**: Test loading states, error boundaries, and edge cases
-5. **Accessibility**: Validate keyboard navigation and screen reader compatibility
-
-**Testing Workflow**:
-
-- Navigate to http://localhost:3001 using Playwright browser navigation
-- Test search functionality with real queries
-- Verify AI-generated content displays correctly
-- Check responsive design on mobile/tablet viewports
-- Test error states and loading indicators
-
-## MCP Integration Patterns
-
-### Firebase Integration Workflow
-
-```typescript
-// ALWAYS start with Firebase tool activation
-await activate_firebase_firebase_tools();
-await activate_firebase_firestore_tools();
-
-// Pattern for database schema updates:
-// 1. Create/update TypeScript interfaces
-// 2. Use Firebase MCP to validate Firestore rules
-// 3. Test schema changes with sample data
-// 4. Deploy rules and migration scripts
-// 5. Validate with real data operations
-```
-
-### Playwright Testing Workflow
-
-```typescript
-// ALWAYS activate required Playwright tools
-await activate_playwright_browser_navigation();
-await activate_playwright_browser_interaction();
-await activate_playwright_browser_screenshots_and_snapshots();
-await activate_playwright_browser_waiting();
-
-// Pattern for component testing:
-// 1. Navigate to development server
-// 2. Test component rendering and functionality
-// 3. Validate responsive design (mobile/tablet/desktop)
-// 4. Capture screenshots for documentation
-// 5. Test error states and edge cases
-// 6. Validate accessibility features
-```
-
-### Implementation Standards
-
-#### Database Operations
-
-- **NEVER** use direct Firebase SDK calls without Firebase MCP validation
-- **ALWAYS** test security rules through Firebase MCP before deployment
-- **REQUIRED** use Firebase MCP for all schema changes and migrations
-- **MANDATORY** validate query performance through Firebase MCP tools
-
-#### UI Development
-
-- **NEVER** deploy UI changes without Playwright MCP testing
-- **ALWAYS** test responsive design on 3+ viewport sizes
-- **REQUIRED** capture component screenshots for documentation
-- **MANDATORY** test keyboard navigation and accessibility
-
-#### Quality Gates
-
-Before any code commit:
-
-- [ ] Firebase MCP validation completed for database changes
-- [ ] Playwright MCP testing completed for UI changes
-- [ ] Screenshots captured for new/modified components
-- [ ] Responsive design validated on multiple viewports
-- [ ] Error handling tested through both MCP tools
+- **NEVER** deploy UI changes without Playwright MCP testing.
+- **ALWAYS** test responsive design on 3+ viewport sizes.
+- **REQUIRED**: Capture component screenshots for documentation.
+- **MANDATORY**: Test keyboard navigation and accessibility.
 
 ## Terminal Commands
 
 **CRITICAL**: When running terminal commands, always use the correct directory navigation:
 
-```bash
+```powershell
 # CORRECT way to navigate and start development server
 cd "C:\Codes\Tango Songs\tangotales" ; npm start
 
@@ -257,15 +129,80 @@ npm start
 
 **Required Terminal Command Format**:
 
-- Use semicolon (`;`) to chain commands in PowerShell
-- Use full absolute path in quotes: `"C:\Codes\Tango Songs\tangotales"`
-- Never use relative paths like `cd tangotales` - they don't work reliably
-- Always navigate to the React app directory BEFORE running npm commands
+- Use semicolon (;) to chain commands in PowerShell.
+- Use full absolute path in quotes: "C:\Codes\Tango Songs\tangotales".
+- Never use relative paths like `cd tangotales` — they don't work reliably.
+- Always navigate to the React app directory BEFORE running npm commands.
 
-**Remember**: Maintain free-tier Firebase constraints - no server-side code, Cloud Functions, or Admin SDK usage.
+## Minimal DB interfaces
+
+The canonical interfaces live in `src/types/song.ts`. Below is a concise, accurate
+representation of the main fields used across the app.
+
+```typescript
+interface Song {
+  id: string;
+  title: string;
+  originalTitle?: string;
+  alternativeTitles: string[];
+  composer: string;
+  lyricist?: string;
+  yearComposed?: number;
+  period?: string;
+  musicalForm?: string;
+  explanation: string;
+  sources: string[];
+  searchCount: number;
+  averageRating: number;
+  totalRatings: number;
+  tags: string[];
+  createdAt: Date;
+  lastUpdated: Date;
+  metadata?: {
+    aiResponseQuality?: 'excellent' | 'good' | 'partial' | 'failed';
+    needsManualReview?: boolean;
+    lastAIUpdate?: Date;
+  };
+}
+
+interface Rating {
+  id?: string;
+  songId: string;
+  rating: number;
+  comment?: string;
+  timestamp: Date;
+}
+```
+
+## AI Integration
+
+- Use Gemini API for structured JSON song explanations; calls must be explicit and user-initiated.
+- Client-side rate limits: default MAX_CONCURRENT_AI_REQUESTS = 1, MIN_REQUEST_DELAY_MS = 2000.
+- Save AI outputs with metadata and `needsManualReview` on first writes.
+- Never print full API keys in logs; print presence only.
+
+## UX and Accessibility
+
+- Desktop-first responsive design with Tailwind CSS.
+- Provide skeleton loaders and clear error states.
+- Ensure ARIA labels, keyboard navigation, and focus management.
+- Support dark and light themes via a ThemeContext.
+
+## Testing & Quality Gates
+
+- Unit tests (Jest): add unit tests for new service logic and for critical components.
+- Playwright MCP: run responsive checks and capture screenshots for major UI changes.
+- Pre-merge: npm run build, lint/type checks, unit tests, Playwright checks, Firebase MCP validation.
 
 ## Secrets & CI
 
-- Store all production API keys and deployment credentials in GitHub Actions Secrets. Do NOT commit secrets to the repository or print them in logs.
-- Never log secret values, partial keys, or key lengths from production code or build scripts; log only presence/absence (for example: "Gemini key: present") and only in development environments when absolutely necessary.
-- For local development, use `.env.local` with non-production keys and never commit `.env` files.
+- Store production keys in GitHub Secrets; never commit them.
+- Use `.env.local` for local keys; do not commit env files.
+
+## Terminal (PowerShell) examples
+
+```powershell
+# change directory to the project, then start the dev server
+cd "C:\Codes\Tango Songs\tangotales"
+npm start
+```
