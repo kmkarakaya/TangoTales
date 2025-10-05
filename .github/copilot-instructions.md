@@ -97,13 +97,15 @@ interface Rating {
 **MANDATORY Usage**: All database operations MUST use Firebase MCP tools
 
 #### Core Firebase Tools
-- `activate_firebase_firebase_tools` - Project management, authentication, deployment  
+
+- `activate_firebase_firebase_tools` - Project management, authentication, deployment
 - `activate_firebase_firestore_tools` - Database operations, queries, rules management
 - `activate_firebase_realtimedatabase_tools` - Real-time data sync (if needed)
 - `activate_firebase_storage_tools` - File storage operations
 - `activate_firebase_authentication_tools` - User management
 
 #### Implementation Requirements
+
 ```typescript
 // Always activate Firebase tools before database operations
 await activate_firebase_firebase_tools();
@@ -123,6 +125,7 @@ await activate_firebase_firestore_tools();
 **MANDATORY Usage**: All UI testing MUST use Playwright MCP tools
 
 #### Core Playwright Tools
+
 - `activate_playwright_browser_navigation` - Page navigation and routing
 - `activate_playwright_browser_interaction` - User interactions (click, type, hover)
 - `activate_playwright_browser_screenshots_and_snapshots` - Visual documentation
@@ -132,6 +135,7 @@ await activate_firebase_firestore_tools();
 - `activate_playwright_browser_console_and_network` - Debugging and monitoring
 
 #### Testing Workflow Requirements
+
 ```typescript
 // Activate all necessary Playwright tools at start
 await activate_playwright_browser_navigation();
@@ -170,6 +174,7 @@ await activate_playwright_browser_screenshots_and_snapshots();
 5. **Accessibility**: Validate keyboard navigation and screen reader compatibility
 
 **Testing Workflow**:
+
 - Navigate to http://localhost:3001 using Playwright browser navigation
 - Test search functionality with real queries
 - Verify AI-generated content displays correctly
@@ -179,6 +184,7 @@ await activate_playwright_browser_screenshots_and_snapshots();
 ## MCP Integration Patterns
 
 ### Firebase Integration Workflow
+
 ```typescript
 // ALWAYS start with Firebase tool activation
 await activate_firebase_firebase_tools();
@@ -192,7 +198,8 @@ await activate_firebase_firestore_tools();
 // 5. Validate with real data operations
 ```
 
-### Playwright Testing Workflow  
+### Playwright Testing Workflow
+
 ```typescript
 // ALWAYS activate required Playwright tools
 await activate_playwright_browser_navigation();
@@ -212,21 +219,25 @@ await activate_playwright_browser_waiting();
 ### Implementation Standards
 
 #### Database Operations
+
 - **NEVER** use direct Firebase SDK calls without Firebase MCP validation
 - **ALWAYS** test security rules through Firebase MCP before deployment
 - **REQUIRED** use Firebase MCP for all schema changes and migrations
 - **MANDATORY** validate query performance through Firebase MCP tools
 
-#### UI Development  
+#### UI Development
+
 - **NEVER** deploy UI changes without Playwright MCP testing
 - **ALWAYS** test responsive design on 3+ viewport sizes
 - **REQUIRED** capture component screenshots for documentation
 - **MANDATORY** test keyboard navigation and accessibility
 
 #### Quality Gates
+
 Before any code commit:
+
 - [ ] Firebase MCP validation completed for database changes
-- [ ] Playwright MCP testing completed for UI changes  
+- [ ] Playwright MCP testing completed for UI changes
 - [ ] Screenshots captured for new/modified components
 - [ ] Responsive design validated on multiple viewports
 - [ ] Error handling tested through both MCP tools
@@ -245,6 +256,7 @@ npm start
 ```
 
 **Required Terminal Command Format**:
+
 - Use semicolon (`;`) to chain commands in PowerShell
 - Use full absolute path in quotes: `"C:\Codes\Tango Songs\tangotales"`
 - Never use relative paths like `cd tangotales` - they don't work reliably

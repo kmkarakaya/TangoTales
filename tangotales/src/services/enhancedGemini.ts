@@ -1,4 +1,15 @@
-import { GoogleGenAI } from '@google/genai';
+// Lazy-load Google GenAI to avoid Jest/Node ESM parsing issues in tests
+let GoogleGenAI: any = null;
+try {
+  if (process.env.NODE_ENV !== 'test') {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    GoogleGenAI = require('@google/genai').GoogleGenAI;
+  }
+} catch (err) {
+  // Don't crash tests or dev when the SDK cannot be loaded (e.g., ESM-only package in test env)
+  const e: any = err;
+  console.warn('⚠️ GEMINI - Could not require @google/genai (expected in test environments):', e && e.message ? e.message : e);
+}
 import { config } from '../utils/config';
 import { SongMetadata, Recording, Performer } from '../types/song';
 
@@ -10,7 +21,7 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 // Initialize Gemini AI client with error handling
-let ai: GoogleGenAI | null = null;
+let ai: any = null;
 
 try {
   if (!config.gemini.apiKey) {
@@ -20,9 +31,12 @@ try {
       REACT_APP_GEMINI_API_KEY: process.env.REACT_APP_GEMINI_API_KEY ? 'SET' : 'MISSING',
       GEMINI_API_KEY: process.env.GEMINI_API_KEY ? 'SET' : 'MISSING'
     });
-  } else {
+  } else if (GoogleGenAI) {
     ai = new GoogleGenAI({ apiKey: config.gemini.apiKey });
     console.log('✅ GEMINI DEBUG - Client initialized successfully');
+  } else {
+    // In test environments or when the SDK cannot be required, keep ai as null and continue
+    console.warn('⚠️ GEMINI DEBUG - GoogleGenAI SDK not available; AI calls will be disabled in this environment.');
   }
 } catch (initError) {
   console.error('❌ GEMINI DEBUG - Client initialization failed:', initError);

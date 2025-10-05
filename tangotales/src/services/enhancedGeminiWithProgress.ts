@@ -1,11 +1,21 @@
-import { GoogleGenAI } from '@google/genai';
+// Lazy-load Google GenAI to avoid Jest/Node ESM parsing issues in tests
+let GoogleGenAI: any = null;
+try {
+  if (process.env.NODE_ENV !== 'test') {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    GoogleGenAI = require('@google/genai').GoogleGenAI;
+  }
+} catch (err) {
+  const e: any = err;
+  console.warn('⚠️ GEMINI - Could not require @google/genai (expected in test environments):', e && e.message ? e.message : e);
+}
 import { config } from '../utils/config';
 import { updateSongWithResearchData, markResearchComplete } from './firestore';
 import { parsePhaseResponse } from './responseParser';
 import { doc, updateDoc, Timestamp } from 'firebase/firestore';
 import { db } from './firebase';
 
-let ai: GoogleGenAI | null = null;
+let ai: any = null;
 
 // Non-sensitive presence check (dev only)
 if (process.env.NODE_ENV === 'development') {
@@ -15,9 +25,11 @@ if (process.env.NODE_ENV === 'development') {
 try {
   if (!config.gemini.apiKey) {
     console.error('❌ GEMINI DEBUG - API key is missing or empty');
-  } else {
+  } else if (GoogleGenAI) {
     ai = new GoogleGenAI({ apiKey: config.gemini.apiKey });
     console.log('✅ GEMINI DEBUG - Client initialized successfully');
+  } else {
+    console.warn('⚠️ GEMINI DEBUG - GoogleGenAI SDK not available; AI calls will be disabled in this environment.');
   }
 } catch (initError) {
   console.error('❌ GEMINI DEBUG - Client initialization failed:', initError);

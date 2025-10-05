@@ -2,43 +2,35 @@
 
 > Discover the stories behind classic tango songs
 
-[![Firebase](https://img.shields.io/badge/Fir📖 **Complete Firebase setup guide**: See [`FIREBASE_SETUP.md`](tangotales/FIREBASE_SETUP.md)
+[![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=flat-square&logo=firebase)](https://tangotales-app.web.app)
+[![React](https://img.shields.io/badge/React-18-blue?style=flat-square&logo=react)](https://reactjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-CSS-38B2AC?style=flat-square&logo=tailwind-css)](https://tailwindcss.com/)
+[![GitHub Actions](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?style=flat-square&logo=github-actions)](https://github.com/kmkarakaya/TangoTales/actions)
+[![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 
 ## 🔄 CI/CD Pipeline
 
-TangoTales uses **GitHub Actions** for automated deployment with Firebase Hosting.
+TangoTales uses **GitHub Actions** for automated deployment with Firebase Hosting. See [`GITHUB_ACTIONS_COMPLETE.md`](tangotales/GITHUB_ACTIONS_COMPLETE.md) for the full CI/CD guide and workflow details.
 
-### 🚀 **Automatic Deployments**
-- **Production**: Push to `main` branch → Auto-deploy to [https://tangotales-app.web.app](https://tangotales### Phase 1: Clean Slate Foundation ✅ COMPLETED
-
-**Step 1**: Project Setup & Environment Configuration ✅  
-**Step 2**: Firebase Firestore Integration ✅  
-**Step 3**: Basic Search Functionality ✅  
-**Step 4**: Phase 1 Clean Slate Implementation ✅
-- AI-powered search with on-demand generation
-- Database cleanup and fresh start
-- Comprehensive UI testing with Playwright MCPb.app)
+### 🚀 Automatic Deployments
+- **Production**: Push to `main` branch → Auto-deploy to [https://tangotales-app.web.app](https://tangotales-app.web.app)
 - **Preview**: Pull Requests → Generate preview URLs for testing
 - **Build Process**: `npm ci && npm run build` in CI environment
 - **Status**: [![GitHub Actions](https://github.com/kmkarakaya/TangoTales/actions/workflows/firebase-hosting-merge.yml/badge.svg)](https://github.com/kmkarakaya/TangoTales/actions)
 
-### 📁 **Workflow Files**
+### 📁 Workflow Files
 - `.github/workflows/firebase-hosting-merge.yml` - Production deployments
 - `.github/workflows/firebase-hosting-pull-request.yml` - PR preview deployments
 
-### 🔐 **Security**
+### 🔐 Security
 - Firebase service account authentication
 - GitHub secrets management for secure deployments
 - Automatic cleanup of preview deployments
 
 📖 **Complete CI/CD guide**: See [`GITHUB_ACTIONS_COMPLETE.md`](tangotales/GITHUB_ACTIONS_COMPLETE.md)
 
-## 🚀 Local Developmentse-Live-orange?style=flat-square&logo=firebase)](https://tangotales-app.web.app)
-[![React](https://img.shields.io/badge/React-18-blue?style=flat-square&logo=react)](https://reactjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind-CSS-38B2AC?style=flat-square&logo=tailwind-css)](https://tailwindcss.com/)
-[![GitHub Actions](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?style=flat-square&logo=github-actions)](https://github.com/kmkarakaya/TangoTales/actions)
-[![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
+## 🚀 Local Development
 
 A modern, responsive web application that helps users discover and explore the meanings, stories, and cultural context behind classic tango songs. TangoTales provides an intuitive interface for searching tango songs and accessing detailed explanations while building a community-driven knowledge base of musical stories.
 
