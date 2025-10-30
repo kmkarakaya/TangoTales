@@ -91,7 +91,7 @@ await activate_playwright_browser_interaction();
 await activate_playwright_browser_screenshots_and_snapshots();
 
 // Standard testing pattern:
-// 1. Navigate to localhost:3001
+// 1. Navigate to localhost:3000
 // 2. Test component functionality
 // 3. Validate responsive design (3+ viewports)
 // 4. Capture screenshots for documentation
