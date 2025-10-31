@@ -1,5 +1,5 @@
 import { db } from './firebase';
-import { collection, doc, updateDoc, increment, getDoc, setDoc, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
+import { collection, doc, updateDoc, increment, getDoc, setDoc, query, orderBy, limit, getDocs } from 'firebase/firestore';
 
 export interface AnalyticsData {
   searchQueries: number;
@@ -172,7 +172,11 @@ class AnalyticsService {
         orderBy('count', 'desc'),
         limit(10)
       );
-      const searchQueriesSnapshot = await getDocs(searchQueriesQuery);
+  const searchQueriesSnapshot = await getDocs(searchQueriesQuery);
+
+  // Build a simple top queries list for debugging / visibility
+  const topQueries = searchQueriesSnapshot.docs.map(d => ({ query: d.id, count: (d.data() as any).count }));
+  console.debug('Top search queries:', topQueries.slice(0, 10));
 
       // Parse popular songs
       const popularSongs = popularDoc.exists() 

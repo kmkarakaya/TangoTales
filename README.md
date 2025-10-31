@@ -2,6 +2,8 @@
 
 > Discover the stories behind classic tango songs
 
+This repository contains the React application in the `tangotales/` folder. For app setup, local development, and testing instructions see `tangotales/README.md`.
+
 [![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=flat-square&logo=firebase)](https://tangotales-app.web.app)
 [![React](https://img.shields.io/badge/React-18-blue?style=flat-square&logo=react)](https://reactjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
@@ -58,6 +60,34 @@ cp .env.example .env.local
 npm start
 # ✅ App will be available at http://localhost:3001
 ```
+
+## Linting & Tests
+
+Developer linting and tests are configured for PowerShell on Windows. Run these from the React app folder.
+
+- Install dependencies (if not already):
+  ```powershell
+  cd "C:\Codes\Tango Songs\tangotales"
+  npm install
+  ```
+
+- Run the test suite once (CI mode):
+  ```powershell
+  $env:CI='true'; npm test -- --watchAll=false
+  ```
+
+- Run ESLint and auto-fix where possible:
+  ```powershell
+  npm run lint
+  npm run lint:fix
+  ```
+
+Notes:
+- ESLint and @typescript-eslint are pinned to versions compatible with Create React App to avoid peer-dependency conflicts (example used in this repo):
+  - eslint@8.39.0
+  - @typescript-eslint/parser@5.62.0
+  - @typescript-eslint/eslint-plugin@5.62.0
+- `npm audit` may report remaining transitive vulnerabilities tied to `react-scripts`; resolving those requires a controlled toolchain upgrade (do not run `npm audit fix --force` on `main` without a migration branch and test run).
 
 ### 🧪 **Testing Search Functionality**
 

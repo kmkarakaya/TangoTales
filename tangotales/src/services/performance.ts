@@ -207,7 +207,7 @@ class PerformanceService {
     maxRetries: number = 3,
     delay: number = 1000
   ): Promise<T> {
-    let lastError: Error;
+  let lastError: Error | undefined;
     
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
@@ -215,9 +215,13 @@ class PerformanceService {
       } catch (error) {
         lastError = error as Error;
         
-        if (attempt === maxRetries) {
-          throw lastError;
-        }
+          if (attempt === maxRetries) {
+            // Ensure we throw an Error object
+            if (lastError instanceof Error) {
+              throw lastError;
+            }
+            throw new Error(String(lastError));
+          }
         
         // Exponential backoff
         await new Promise(resolve => 
@@ -226,7 +230,11 @@ class PerformanceService {
       }
     }
     
-    throw lastError!;
+    // Final throw - ensure an Error object is thrown
+    if (lastError instanceof Error) {
+      throw lastError;
+    }
+    throw new Error(String(lastError));
   }
 }
 

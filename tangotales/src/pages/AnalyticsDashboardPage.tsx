@@ -13,20 +13,7 @@ const AnalyticsDashboardPage: React.FC = () => {
   const analyticsService = AnalyticsService.getInstance();
   const performanceService = PerformanceService.getInstance();
 
-  useEffect(() => {
-    loadAnalytics();
-    loadCacheStats();
-    
-    // Refresh every 30 seconds
-    const interval = setInterval(() => {
-      loadAnalytics();
-      loadCacheStats();
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const loadAnalytics = async () => {
+  const loadAnalytics = React.useCallback(async () => {
     try {
       setIsLoading(true);
       const data = await analyticsService.getAnalytics();
@@ -38,16 +25,29 @@ const AnalyticsDashboardPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [analyticsService]);
 
-  const loadCacheStats = () => {
+  const loadCacheStats = React.useCallback(() => {
     try {
       const stats = performanceService.getCacheStats();
       setCacheStats(stats);
     } catch (err) {
       console.error('Cache stats error:', err);
     }
-  };
+  }, [performanceService]);
+
+  useEffect(() => {
+    loadAnalytics();
+    loadCacheStats();
+
+    // Refresh every 30 seconds
+    const interval = setInterval(() => {
+      loadAnalytics();
+      loadCacheStats();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [loadAnalytics, loadCacheStats]);
 
   if (isLoading && !analytics) {
     return (

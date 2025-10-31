@@ -1,3 +1,9 @@
+import { config } from '../utils/config';
+import { updateSongWithResearchData, markResearchComplete } from './firestore';
+import { parsePhaseResponse } from './responseParser';
+import { doc, updateDoc, Timestamp } from 'firebase/firestore';
+import { db } from './firebase';
+
 // Lazy-load Google GenAI to avoid Jest/Node ESM parsing issues in tests
 let GoogleGenAI: any = null;
 try {
@@ -9,11 +15,6 @@ try {
   const e: any = err;
   console.warn('⚠️ GEMINI - Could not require @google/genai (expected in test environments):', e && e.message ? e.message : e);
 }
-import { config } from '../utils/config';
-import { updateSongWithResearchData, markResearchComplete } from './firestore';
-import { parsePhaseResponse } from './responseParser';
-import { doc, updateDoc, Timestamp } from 'firebase/firestore';
-import { db } from './firebase';
 
 let ai: any = null;
 

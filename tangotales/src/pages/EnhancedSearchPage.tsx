@@ -18,12 +18,7 @@ const EnhancedSearchPage: React.FC = () => {
   const enhancedSearchService = EnhancedSearchService.getInstance();
   const analyticsService = AnalyticsService.getInstance();
 
-  useEffect(() => {
-    loadAnalytics();
-    loadPopularTerms();
-  }, []);
-
-  const loadAnalytics = async () => {
+  const loadAnalytics = React.useCallback(async () => {
     try {
       const data = await analyticsService.getAnalytics();
       setAnalytics(data);
@@ -38,16 +33,21 @@ const EnhancedSearchPage: React.FC = () => {
     } catch (error) {
       console.error('Failed to load analytics:', error);
     }
-  };
+  }, [analyticsService]);
 
-  const loadPopularTerms = async () => {
+  const loadPopularTerms = React.useCallback(async () => {
     try {
       const terms = await enhancedSearchService.getPopularSearchTerms(5);
       setPopularTerms(terms);
     } catch (error) {
       console.error('Failed to load popular terms:', error);
     }
-  };
+  }, [enhancedSearchService]);
+
+  useEffect(() => {
+    loadAnalytics();
+    loadPopularTerms();
+  }, [loadAnalytics, loadPopularTerms]);
 
   const clearFilters = () => {
     setFilters({});

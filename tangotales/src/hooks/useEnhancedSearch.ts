@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Song } from '../types/song';
 import EnhancedSearchService, { AdvancedSearchFilters, SearchOptions, SearchResult } from '../services/enhancedSearch';
 import PerformanceService from '../services/performance';
 import AnalyticsService from '../services/analytics';
@@ -63,6 +62,7 @@ export const useEnhancedSearch = (options: UseEnhancedSearchOptions = {}): UseEn
   const searchAbortController = useRef<AbortController | null>(null);
 
   // Debounced search function
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const debouncedSearch = useCallback(
     performanceService.debounce(async (
       term: string, 
@@ -112,7 +112,7 @@ export const useEnhancedSearch = (options: UseEnhancedSearchOptions = {}): UseEn
         searchAbortController.current = null;
       }
     }, debounceMs),
-    [debounceMs, cacheEnabled]
+    [debounceMs, cacheEnabled, enhancedSearchService, performanceService, analyticsService]
   );
 
   // Main search function
@@ -153,7 +153,7 @@ export const useEnhancedSearch = (options: UseEnhancedSearchOptions = {}): UseEn
     } finally {
       setIsLoading(false);
     }
-  }, [searchResult, isLoading]);
+  }, [searchResult, isLoading, enhancedSearchService]);
 
   // Clear search
   const clearSearch = useCallback(() => {
@@ -182,7 +182,7 @@ export const useEnhancedSearch = (options: UseEnhancedSearchOptions = {}): UseEn
       console.error('Suggestions error:', err);
       setSuggestions([]);
     }
-  }, [autoSuggest]);
+  }, [autoSuggest, enhancedSearchService]);
 
   // Clear suggestions
   const clearSuggestions = useCallback(() => {
@@ -198,7 +198,7 @@ export const useEnhancedSearch = (options: UseEnhancedSearchOptions = {}): UseEn
       console.error('Popular terms error:', err);
       setPopularTerms([]);
     }
-  }, []);
+  }, [enhancedSearchService]);
 
   // Load cache stats
   const loadCacheStats = useCallback(() => {
@@ -208,7 +208,7 @@ export const useEnhancedSearch = (options: UseEnhancedSearchOptions = {}): UseEn
     } catch (err) {
       console.error('Cache stats error:', err);
     }
-  }, []);
+  }, [performanceService]);
 
   // Initialize popular terms on mount
   useEffect(() => {

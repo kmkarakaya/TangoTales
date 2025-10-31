@@ -134,6 +134,20 @@ npm start
 - Never use relative paths like `cd tangotales` — they don't work reliably.
 - Always navigate to the React app directory BEFORE running npm commands.
 
+## Linting & ESLint
+
+- Use the Create React App (CRA)-compatible ESLint stack to avoid peer-dependency conflicts when installing developer tooling. The versions used in this repository are known to work with the CRA toolchain:
+  - eslint@8.39.0
+  - @typescript-eslint/parser@5.62.0
+  - @typescript-eslint/eslint-plugin@5.62.0
+
+- Run linters from PowerShell in the React app folder:
+  ```powershell
+  cd "C:\Codes\Tango Songs\tangotales" ; npm run lint
+  ```
+
+- Note: Some `npm audit` advisories are transitive through `react-scripts` and require a toolchain upgrade to fully resolve. Do not run `npm audit fix --force` on `main` without a dedicated migration branch, full test run, and CI validation.
+
 ## Minimal DB interfaces
 
 The canonical interfaces live in `src/types/song.ts`. Below is a concise, accurate

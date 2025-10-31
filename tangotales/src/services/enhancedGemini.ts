@@ -1,3 +1,6 @@
+import { config } from '../utils/config';
+import { SongMetadata, Recording, Performer } from '../types/song';
+
 // Lazy-load Google GenAI to avoid Jest/Node ESM parsing issues in tests
 let GoogleGenAI: any = null;
 try {
@@ -10,8 +13,6 @@ try {
   const e: any = err;
   console.warn('⚠️ GEMINI - Could not require @google/genai (expected in test environments):', e && e.message ? e.message : e);
 }
-import { config } from '../utils/config';
-import { SongMetadata, Recording, Performer } from '../types/song';
 
 // Debug logging for Gemini API configuration
 console.log('🔍 GEMINI DEBUG - Configuration check:');

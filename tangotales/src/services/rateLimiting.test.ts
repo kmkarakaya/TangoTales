@@ -64,7 +64,6 @@ jest.mock('firebase/firestore', () => ({
 }));
 
 describe('Rate Limiting Integration', () => {
-  let SongInformationService: any;
 
   beforeEach(() => {
     jest.resetModules();
@@ -81,9 +80,6 @@ describe('Rate Limiting Integration', () => {
 
   test('should allow single request', async () => {
     const { songInformationService } = require('../services/enhancedGeminiWithProgress');
-    
-    const mockProgressCallback = jest.fn();
-    
     // This test just verifies that the service can be imported and doesn't throw on configuration
     expect(songInformationService).toBeDefined();
     expect(typeof songInformationService.getEnhancedSongInformation).toBe('function');
@@ -91,10 +87,6 @@ describe('Rate Limiting Integration', () => {
 
   test('should enforce minimum delay between requests', async () => {
     const { SongInformationService } = require('../services/enhancedGeminiWithProgress');
-    
-    // Set up timing
-    const startTime = Date.now();
-
     // Verify that the static properties exist (this tests our rate limiting structure)
     expect(SongInformationService.activeRequests).toBeDefined();
     expect(SongInformationService.lastRequestTime).toBeDefined();

@@ -68,7 +68,7 @@ export const EnhancedSongCard: React.FC<EnhancedSongCardProps> = ({
     }
 
     return () => observer.disconnect();
-  }, [lazyLoad, isInView, priority]);
+  }, [lazyLoad, isInView, priority, performanceService]);
 
   const handleCardClick = async () => {
     if (onClick) {
