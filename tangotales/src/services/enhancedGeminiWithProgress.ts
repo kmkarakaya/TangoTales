@@ -6,6 +6,7 @@ import { doc, updateDoc, Timestamp } from 'firebase/firestore';
 import { db } from './firebase';
 import { extractGroundingUrls } from '../utils/groundingExtractor';
 import { filterValidUrls } from '../utils/urlValidator';
+import { groupRecordingsByArtist, createNotableRecording } from '../utils/recordingParser';
 
 // Lazy-load Google GenAI to avoid Jest/Node ESM parsing issues in tests
 let GoogleGenAI: any = null;
@@ -748,7 +749,7 @@ Prioritize current/recent recordings found through search. Limit to 3-5 most sig
         
         // Create recordingSources from validated search results ONLY
         const validatedRecordingSources = turn4ValidatedUrls.map(url => {
-          const source = turn4SearchSources.find(s => s.url === url);
+          const source = turn4SearchSources.find(s => s.url === url || url.includes(s.url.substring(0, 50)));
           return {
             title: source?.title || source?.domain || 'Recording source',
             url: url,
@@ -760,44 +761,42 @@ Prioritize current/recent recordings found through search. Limit to 3-5 most sig
         // REPLACE any AI-generated URLs with real validated URLs
         recordingData.recordingSources = validatedRecordingSources;
         
-        // Enhance notableRecordings with validated links
-        if (recordingData.notableRecordings && Array.isArray(recordingData.notableRecordings)) {
-          recordingData.notableRecordings = recordingData.notableRecordings.map((recording: any, index: number) => {
-            // Intelligently match recordings to URLs
-            const relevantUrls = turn4ValidatedUrls.filter((url, urlIndex) => {
-              const source = turn4SearchSources.find(s => s.url === url);
-              if (!source) return false;
-              
-              const urlText = (url + ' ' + (source.title || '')).toLowerCase();
-              const artistName = (recording.artist || '').toLowerCase();
-              
-              // Match by artist name or if it's a streaming platform
-              return urlText.includes(artistName) || 
-                     source.type === 'streaming_platform' ||
-                     source.type === 'discography';
-            });
-            
-            // Use relevant URLs or distribute remaining URLs
-            const urlsToUse = relevantUrls.length > 0 ? relevantUrls.slice(0, 2) : 
-                             (index < turn4ValidatedUrls.length ? [turn4ValidatedUrls[index]] : []);
-            
-            return {
-              ...recording,
-              links: urlsToUse.map(url => {
-                const source = turn4SearchSources.find(s => s.url === url);
-                return {
-                  label: source?.title || source?.domain || 'Listen',
-                  url: url,
-                  type: source?.type || 'other'
-                };
-              })
-            };
-          });
-        }
+        // ✅ PROPERLY PARSE recording metadata from grounding titles
+        const recordingsByArtist = groupRecordingsByArtist(
+          turn4SearchSources.filter(s => turn4ValidatedUrls.some(url => 
+            url === s.url || url.includes(s.url.substring(0, 50))
+          )),
+          correctedTitle
+        );
         
-        console.log('✅ Enhanced recording data with validated search URLs');
+        console.log(`✅ Grouped ${recordingsByArtist.size} artists from grounding metadata`);
+        
+        // Create notable recordings from parsed metadata
+        const notableRecordings: any[] = [];
+        Array.from(recordingsByArtist.entries()).forEach(([artist, recordings]) => {
+          // Sort by year (oldest first for historical value)
+          recordings.sort((a: any, b: any) => {
+            if (a.metadata.year && b.metadata.year) {
+              return a.metadata.year - b.metadata.year;
+            }
+            return 0;
+          });
+          
+          // Take the most representative recording for this artist
+          const mainRecording = recordings[0];
+          const urlData = turn4SearchSources.filter(s => 
+            recordings.some((r: any) => r.url === s.url || r.url.includes(s.url.substring(0, 50)))
+          );
+          
+          notableRecordings.push(createNotableRecording(mainRecording.metadata, urlData));
+        });
+        
+        // Replace AI-generated recordings with properly parsed ones
+        recordingData.notableRecordings = notableRecordings;
+        
+        console.log('✅ Enhanced recording data with parsed metadata from grounding');
         console.log('- Validated sources added:', validatedRecordingSources.length);
-        console.log('- Recordings enhanced with links:', recordingData.notableRecordings?.length || 0);
+        console.log('- Recordings with correct metadata:', notableRecordings.length);
       } else {
         console.log('⚠️ No validated URLs found from Google Search - recordings may not have links');
       }

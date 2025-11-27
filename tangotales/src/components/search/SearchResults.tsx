@@ -90,6 +90,28 @@ const EnhanceWithAIButton: React.FC<EnhanceWithAIButtonProps> = ({
         </div>
       )}
       
+      {/* Progress bar when enhancing */}
+      {isEnhancing && currentProgress && (
+        <div className="w-full">
+          <div className="w-full bg-gray-200 rounded-full h-2 mb-1">
+            <div 
+              className="bg-blue-600 h-2 rounded-full transition-all duration-500"
+              style={{ 
+                width: `${((currentProgress.phase + (currentProgress.completed ? 1 : 0)) / currentProgress.totalPhases) * 100}%` 
+              }}
+              aria-label={`Progress: ${currentProgress.phase + 1} of ${currentProgress.totalPhases}`}
+              role="progressbar"
+              aria-valuenow={currentProgress.phase + 1}
+              aria-valuemin={0}
+              aria-valuemax={currentProgress.totalPhases}
+            />
+          </div>
+          <div className="text-xs text-gray-600">
+            {currentProgress.message} ({currentProgress.phase + 1}/{currentProgress.totalPhases})
+          </div>
+        </div>
+      )}
+      
       <button 
         onClick={handleEnhanceWithAI}
         disabled={isEnhancing}
@@ -100,32 +122,7 @@ const EnhanceWithAIButton: React.FC<EnhanceWithAIButtonProps> = ({
         }`}
       >
         {isEnhancing ? (
-          <div className="flex flex-col items-center gap-2 w-full">
-            <div className="flex items-center">
-              <LoadingSpinner size="sm" className="inline mr-2 p-0" color="white" message="" />
-              <span>{currentProgress ? 'AI Research in Progress...' : '🤖 Enhancing...'}</span>
-            </div>
-            {currentProgress && (
-              <div className="w-full px-2">
-                <div className="w-full bg-white/20 rounded-full h-1.5 mb-1">
-                  <div 
-                    className="bg-white h-1.5 rounded-full transition-all duration-500"
-                    style={{ 
-                      width: `${((currentProgress.phase + (currentProgress.completed ? 1 : 0)) / currentProgress.totalPhases) * 100}%` 
-                    }}
-                    aria-label={`Progress: ${currentProgress.phase + 1} of ${currentProgress.totalPhases}`}
-                    role="progressbar"
-                    aria-valuenow={currentProgress.phase + 1}
-                    aria-valuemin={0}
-                    aria-valuemax={currentProgress.totalPhases}
-                  />
-                </div>
-                <span className="text-xs text-white/90">
-                  {currentProgress.message} ({currentProgress.phase + 1}/{currentProgress.totalPhases})
-                </span>
-              </div>
-            )}
-          </div>
+          <span>🤖 Enhancing...</span>
         ) : (
           <>
             <span className={iconSize}>🤖</span> Enhance with AI
@@ -161,6 +158,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   const [selectedSong, setSelectedSong] = useState<Song | null>(null);
   const [enhancingSong, setEnhancingSong] = useState<string | null>(null);
   const [enhancedSongs, setEnhancedSongs] = useState<Map<string, Song>>(new Map());
+  const [modalEnhancementProgress, setModalEnhancementProgress] = useState<ProgressUpdate | null>(null);
 
   // Handle ESC key to close modal
   useEffect(() => {
@@ -228,6 +226,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   // Handle enhancement that keeps modal open and updates content
   const handleEnhanceSongInModal = async (song: Song) => {
     setEnhancingSong(song.id);
+    setModalEnhancementProgress(null);
     
     try {
       // Import enhanced services dynamically
@@ -239,8 +238,8 @@ const SearchResults: React.FC<SearchResultsProps> = ({
       // Research the song with enhanced AI and progress tracking
       const enhancedResult = await songInformationService.getEnhancedSongInformation(
         { title: song.title, songId: song.id },
-        (_progress: ProgressUpdate) => {
-          // Progress callback - could be used for analytics or logging
+        (progress: ProgressUpdate) => {
+          setModalEnhancementProgress(progress);
         }
       );
       
@@ -269,6 +268,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
       console.error(`Failed to enhance song "${song.title}":`, error);
     } finally {
       setEnhancingSong(null);
+      setModalEnhancementProgress(null);
     }
   };
 
@@ -328,6 +328,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                 onClose={() => setSelectedSong(null)}
                 onEnhance={() => handleEnhanceSongInModal(selectedSong)}
                 isEnhancing={enhancingSong === selectedSong.id}
+                enhancementProgress={modalEnhancementProgress}
                 className=""
               />
             </div>
@@ -844,6 +845,28 @@ const NoResultsFound: React.FC<NoResultsFoundProps> = ({ query, onRefreshSearch,
           </div>
         )}
         
+        {/* Progress bar when researching */}
+        {isResearching && researchProgress && (
+          <div className="w-full max-w-md mx-auto mb-4">
+            <div className="w-full bg-gray-200 rounded-full h-2 mb-1">
+              <div 
+                className="bg-red-600 h-2 rounded-full transition-all duration-500"
+                style={{ 
+                  width: `${((researchProgress.phase + (researchProgress.completed ? 1 : 0)) / researchProgress.totalPhases) * 100}%` 
+                }}
+                aria-label={`Progress: ${researchProgress.phase + 1} of ${researchProgress.totalPhases}`}
+                role="progressbar"
+                aria-valuenow={researchProgress.phase + 1}
+                aria-valuemin={0}
+                aria-valuemax={researchProgress.totalPhases}
+              />
+            </div>
+            <div className="text-sm text-gray-600">
+              {researchProgress.message} ({researchProgress.phase + 1}/{researchProgress.totalPhases})
+            </div>
+          </div>
+        )}
+        
         <button 
           onClick={handleResearchWithAI}
           disabled={isResearching || !query.trim()}
@@ -854,32 +877,7 @@ const NoResultsFound: React.FC<NoResultsFoundProps> = ({ query, onRefreshSearch,
           }`}
         >
           {isResearching ? (
-            <div className="flex flex-col items-center gap-2 w-full">
-              <div className="flex items-center">
-                <LoadingSpinner size="sm" className="inline mr-2" />
-                <span>{researchProgress ? 'AI Research in Progress...' : '🎵 Researching...'}</span>
-              </div>
-              {researchProgress && (
-                <div className="w-full px-2">
-                  <div className="w-full bg-white/20 rounded-full h-1.5 mb-1">
-                    <div 
-                      className="bg-white h-1.5 rounded-full transition-all duration-500"
-                      style={{ 
-                        width: `${((researchProgress.phase + (researchProgress.completed ? 1 : 0)) / researchProgress.totalPhases) * 100}%` 
-                      }}
-                      aria-label={`Progress: ${researchProgress.phase + 1} of ${researchProgress.totalPhases}`}
-                      role="progressbar"
-                      aria-valuenow={researchProgress.phase + 1}
-                      aria-valuemin={0}
-                      aria-valuemax={researchProgress.totalPhases}
-                    />
-                  </div>
-                  <span className="text-xs text-white/90">
-                    {researchProgress.message} ({researchProgress.phase + 1}/{researchProgress.totalPhases})
-                  </span>
-                </div>
-              )}
-            </div>
+            '🤖 Researching...'
           ) : (
             '🚀 Start AI Research'
           )}

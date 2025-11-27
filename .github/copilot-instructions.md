@@ -52,6 +52,35 @@ Constraint: use free-tier Firebase features only; keep logic client-side.
 - `activate_firebase_storage_tools` — File storage operations.
 - `activate_firebase_authentication_tools` — User management.
 
+##### Firebase MCP Environment Setup
+
+**CRITICAL**: Before using Firebase MCP tools, you MUST configure the MCP environment to point to the correct project:
+
+```typescript
+// Step 1: Update Firebase MCP environment to tangotales project
+await mcp_firebase_firebase_update_environment({
+  project_dir: "C:\\Codes\\Tango Songs\\tangotales",
+  active_project: "tangotales-app"
+});
+
+// Step 2: Verify the environment is correctly configured
+const env = await mcp_firebase_firebase_get_environment();
+// Confirm: Project Directory shows "C:\Codes\Tango Songs\tangotales"
+// Confirm: Active Project ID shows "tangotales-app"
+
+// Step 3: Now you can use Firestore tools
+const collections = await mcp_firebase_firestore_list_collections();
+const songs = await mcp_firebase_firestore_query_collection({
+  collection_path: "songs",
+  filters: [],
+  limit: 10
+});
+```
+
+**Common Issue**: If MCP tools return data from the wrong project (e.g., `hobbymap-scuba-dive`):
+- Call `mcp_firebase_firebase_update_environment` with the correct `project_dir` and `active_project`.
+- Always verify with `mcp_firebase_firebase_get_environment` before querying data.
+
 ##### Implementation Requirements
 
 ```typescript

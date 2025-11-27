@@ -240,23 +240,49 @@ export async function validateUrls(
 /**
  * Filter URLs to only keep valid, accessible ones
  * Returns the FINAL URLs after following redirects
+ * 
+ * ⚠️ SPECIAL CASE: Google grounding redirect URLs cannot be validated in advance
+ * because they are temporary tokens. We keep them AS-IS since they come from Gemini.
  */
 export async function filterValidUrls(
   urls: string[],
   concurrency: number = 3
 ): Promise<string[]> {
-  const validationResults = await validateUrls(urls, concurrency);
+  // Separate Google redirect URLs from normal URLs
+  const googleRedirectUrls = urls.filter(url => 
+    url.includes('vertexaisearch.cloud.google.com/grounding-api-redirect/')
+  );
+  const normalUrls = urls.filter(url => 
+    !url.includes('vertexaisearch.cloud.google.com/grounding-api-redirect/')
+  );
+  
+  if (googleRedirectUrls.length > 0) {
+    console.warn(`⚠️ VALIDATION - Found ${googleRedirectUrls.length} Google redirect URLs`);
+    console.warn(`   These are temporary tokens from Gemini's grounding and CANNOT be validated`);
+    console.warn(`   Keeping them AS-IS - they will redirect when clicked by the user`);
+  }
+  
+  // Validate only normal URLs
+  const validationResults = await validateUrls(normalUrls, concurrency);
   const validUrls: string[] = [];
   
-  for (const url of urls) {
+  for (const url of normalUrls) {
     const result = validationResults.get(url);
     if (result?.isValid) {
       // ✅ Use finalUrl if available (after following redirects), otherwise original URL
       validUrls.push(result.finalUrl || url);
+    } else {
+      console.log(`❌ VALIDATION - URL failed: ${url.substring(0, 60)}...`);
+      if (result?.error) {
+        console.log(`   Error: ${result.error}`);
+      }
     }
   }
   
-  return validUrls;
+  console.log(`✅ VALIDATION - ${validUrls.length}/${normalUrls.length} normal URLs valid`);
+  
+  // Return Google redirect URLs AS-IS + validated normal URLs
+  return [...googleRedirectUrls, ...validUrls];
 }
 
 /**

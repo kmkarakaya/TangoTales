@@ -1,12 +1,14 @@
 import React from 'react';
 import { Song, Performer } from '../../types/song';
 import NotableRecordingLinks from '../common/NotableRecordingLinks';
+import type { ProgressUpdate } from '../../services/enhancedGeminiWithProgress';
 
 interface EnhancedSongDetailProps {
   song: Song;
   onClose?: () => void;
   onEnhance?: () => void;
   isEnhancing?: boolean;
+  enhancementProgress?: ProgressUpdate | null;
   className?: string;
 }
 
@@ -15,6 +17,7 @@ export const EnhancedSongDetail: React.FC<EnhancedSongDetailProps> = ({
   onClose,
   onEnhance,
   isEnhancing = false,
+  enhancementProgress = null,
   className = ""
 }) => {
 
@@ -142,6 +145,28 @@ export const EnhancedSongDetail: React.FC<EnhancedSongDetailProps> = ({
           )}
         </div>
       </div>
+
+      {/* Enhancement Progress Bar */}
+      {isEnhancing && enhancementProgress && (
+        <div className="px-6 py-3 border-b border-white/20 bg-blue-500/10">
+          <div className="w-full bg-white/20 rounded-full h-2 mb-2">
+            <div 
+              className="bg-blue-400 h-2 rounded-full transition-all duration-500"
+              style={{ 
+                width: `${((enhancementProgress.phase + (enhancementProgress.completed ? 1 : 0)) / enhancementProgress.totalPhases) * 100}%` 
+              }}
+              aria-label={`Progress: ${enhancementProgress.phase + 1} of ${enhancementProgress.totalPhases}`}
+              role="progressbar"
+              aria-valuenow={enhancementProgress.phase + 1}
+              aria-valuemin={0}
+              aria-valuemax={enhancementProgress.totalPhases}
+            />
+          </div>
+          <div className="text-sm text-blue-200">
+            {enhancementProgress.message} ({enhancementProgress.phase + 1}/{enhancementProgress.totalPhases})
+          </div>
+        </div>
+      )}
 
       <div className="p-6 space-y-6">
         {/* Composer & Lyricist */}
