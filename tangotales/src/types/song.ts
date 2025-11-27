@@ -47,13 +47,21 @@ export interface MusicalAnalysis {
   searchFindings: SearchFindings[];
 }
 
+export interface NotableRecordingLink {
+  label?: string;
+  url: string;
+  type?: string; // e.g. 'youtube' | 'spotify' | 'archive' | 'other'
+}
+
+// Backwards-compatible: allow links on EnhancedRecording
 export interface EnhancedRecording {
   artist: string;
-  year: string;
+  year?: number;
   label?: string;
   notes?: string;
   significance?: string;
   availability?: string;
+  links?: NotableRecordingLink[];
 }
 
 export interface NotableRecordings {

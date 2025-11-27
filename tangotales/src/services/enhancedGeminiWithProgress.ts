@@ -1,6 +1,7 @@
 import { config } from '../utils/config';
 import { updateSongWithResearchData, markResearchComplete } from './firestore';
 import { parsePhaseResponse } from './responseParser';
+import { recoverPhase4FromText } from './phase4Recovery';
 import { doc, updateDoc, Timestamp } from 'firebase/firestore';
 import { db } from './firebase';
 
@@ -141,6 +142,35 @@ class SongInformationService {
   private static activeRequests = 0;
   private static lastRequestTime = 0;
   
+  /**
+   * Categorize URL type based on domain and source info
+   */
+  private categorizeUrlType(url: string, source: string): string {
+    try {
+      const domain = new URL(url).hostname.toLowerCase();
+      
+      if (domain.includes('youtube') || domain.includes('youtu.be')) {
+        return 'streaming_platform';
+      } else if (domain.includes('spotify') || (domain.includes('apple') && domain.includes('music'))) {
+        return 'streaming_platform';
+      } else if (domain.includes('discogs')) {
+        return 'discography';
+      } else if (domain.includes('tango.info') || domain.includes('todotango')) {
+        return 'archive';
+      } else if (domain.includes('wikipedia') || domain.includes('encyclopedia')) {
+        return 'music_database';
+      } else if (source.toLowerCase().includes('streaming') || source.toLowerCase().includes('music')) {
+        return 'streaming_platform';
+      } else if (source.toLowerCase().includes('archive') || source.toLowerCase().includes('database')) {
+        return 'archive';
+      } else {
+        return 'other';
+      }
+    } catch (e) {
+      return 'other';
+    }
+  }
+  
   async getEnhancedSongInformation(
     params: EnhancedSongParams, 
     progressCallback?: ProgressCallback,
@@ -192,14 +222,14 @@ class SongInformationService {
           model: "gemini-2.5-flash",
           config: {
             temperature: 0.3, // Lower for factual information
-            maxOutputTokens: 2048
+            maxOutputTokens: 8192 // Further increased for Search Grounding responses which can be very long
           }
         };
         
         // 🆕 Add search grounding if enabled
         if (useSearchGrounding) {
-          chatConfig.config.tools = [{ google_search: {} }];
-          console.log('🔍 GEMINI DEBUG - Search grounding enabled');
+          chatConfig.config.tools = [{ googleSearch: {} }];
+          console.log('🔍 GEMINI DEBUG - Search grounding enabled with correct tool config');
         } else {
           console.log('📚 GEMINI DEBUG - Using knowledge-only mode');
         }
@@ -306,6 +336,39 @@ EXAMPLES TO REJECT: "yellow flower", "sarı çiçek", "hello world", "rock music
       const titleResponse = await chat.sendMessage({ message: titleCorrectionPrompt });
       console.log('📥 Turn 0 response:', titleResponse.text?.length || 0, 'chars');
       
+      // 🔍 EXTRACT GROUNDING URLs from Turn 0 response
+      let turn0SearchUrls: Array<{url: string, title?: string, source?: string}> = [];
+      if (titleResponse.candidates && titleResponse.candidates.length > 0) {
+        const firstCandidate = titleResponse.candidates[0];
+        const groundingMetadata = firstCandidate?.grounding_metadata || firstCandidate?.groundingMetadata;
+        
+        if (groundingMetadata?.grounding_chunks || groundingMetadata?.groundingChunks) {
+          const chunks = groundingMetadata.grounding_chunks || groundingMetadata.groundingChunks;
+          if (Array.isArray(chunks)) {
+            turn0SearchUrls = chunks
+              .filter(chunk => chunk && (chunk.web || chunk.uri))
+              .map(chunk => {
+                const uri = chunk.web?.uri || chunk.uri;
+                const title = chunk.web?.title || chunk.title;
+                let source = 'unknown';
+                try {
+                  const domain = new URL(uri).hostname.toLowerCase();
+                  if (domain.includes('wikipedia')) source = 'Wikipedia';
+                  else if (domain.includes('todotango')) source = 'TodoTango';
+                  else if (domain.includes('tango.info')) source = 'tango.info';
+                  else if (domain.includes('secondhandsongs')) source = 'SecondHandSongs';
+                  else if (domain.includes('tangodc')) source = 'TangoDC';
+                  else source = domain;
+                } catch (e) {
+                  source = 'unknown';
+                }
+                return { url: uri, title: title, source: source };
+              });
+          }
+        }
+      }
+      console.log('🔍 Turn 0 - Extracted', turn0SearchUrls.length, 'grounding URLs');
+      
       const titleData = this.parseJSONWithRepair(titleResponse.text) as any;
       
       // Check if this is actually a tango song
@@ -392,6 +455,39 @@ Periods: Pre-Golden Age / Guardia Vieja & Guardia Nueva (1880-1935), Golden Age 
       
       const basicResponse = await chat.sendMessage({ message: basicPrompt });
       console.log('📥 Turn 1 response:', basicResponse.text?.length || 0, 'chars');
+      
+      // 🔍 EXTRACT GROUNDING URLs from Turn 1 response
+      let turn1SearchUrls: Array<{url: string, title?: string, source?: string}> = [];
+      if (basicResponse.candidates && basicResponse.candidates.length > 0) {
+        const firstCandidate = basicResponse.candidates[0];
+        const groundingMetadata = firstCandidate?.grounding_metadata || firstCandidate?.groundingMetadata;
+        
+        if (groundingMetadata?.grounding_chunks || groundingMetadata?.groundingChunks) {
+          const chunks = groundingMetadata.grounding_chunks || groundingMetadata.groundingChunks;
+          if (Array.isArray(chunks)) {
+            turn1SearchUrls = chunks
+              .filter(chunk => chunk && (chunk.web || chunk.uri))
+              .map(chunk => {
+                const uri = chunk.web?.uri || chunk.uri;
+                const title = chunk.web?.title || chunk.title;
+                let source = 'unknown';
+                try {
+                  const domain = new URL(uri).hostname.toLowerCase();
+                  if (domain.includes('wikipedia')) source = 'Wikipedia';
+                  else if (domain.includes('todotango')) source = 'TodoTango';
+                  else if (domain.includes('tango.info')) source = 'tango.info';
+                  else if (domain.includes('secondhandsongs')) source = 'SecondHandSongs';
+                  else if (domain.includes('tangodc')) source = 'TangoDC';
+                  else source = domain;
+                } catch (e) {
+                  source = 'unknown';
+                }
+                return { url: uri, title: title, source: source };
+              });
+          }
+        }
+      }
+      console.log('🔍 Turn 1 - Extracted', turn1SearchUrls.length, 'grounding URLs');
       
       const basicData = this.parseJSONWithRepair(basicResponse.text);
       Object.assign(songData, basicData);
@@ -484,6 +580,39 @@ Keep descriptions concise (1-2 sentences each).`;
       const culturalResponse = await chat.sendMessage({ message: culturalPrompt });
       console.log('📥 Turn 2 response:', culturalResponse.text?.length || 0, 'chars');
       
+      // 🔍 EXTRACT GROUNDING URLs from Turn 2 response
+      let turn2SearchUrls: Array<{url: string, title?: string, source?: string}> = [];
+      if (culturalResponse.candidates && culturalResponse.candidates.length > 0) {
+        const firstCandidate = culturalResponse.candidates[0];
+        const groundingMetadata = firstCandidate?.grounding_metadata || firstCandidate?.groundingMetadata;
+        
+        if (groundingMetadata?.grounding_chunks || groundingMetadata?.groundingChunks) {
+          const chunks = groundingMetadata.grounding_chunks || groundingMetadata.groundingChunks;
+          if (Array.isArray(chunks)) {
+            turn2SearchUrls = chunks
+              .filter(chunk => chunk && (chunk.web || chunk.uri))
+              .map(chunk => {
+                const uri = chunk.web?.uri || chunk.uri;
+                const title = chunk.web?.title || chunk.title;
+                let source = 'unknown';
+                try {
+                  const domain = new URL(uri).hostname.toLowerCase();
+                  if (domain.includes('wikipedia')) source = 'Wikipedia';
+                  else if (domain.includes('todotango')) source = 'TodoTango';
+                  else if (domain.includes('tango.info')) source = 'tango.info';
+                  else if (domain.includes('secondhandsongs')) source = 'SecondHandSongs';
+                  else if (domain.includes('tangodc')) source = 'TangoDC';
+                  else source = domain;
+                } catch (e) {
+                  source = 'unknown';
+                }
+                return { url: uri, title: title, source: source };
+              });
+          }
+        }
+      }
+      console.log('🔍 Turn 2 - Extracted', turn2SearchUrls.length, 'grounding URLs');
+      
       const culturalData = this.parseJSONWithRepair(culturalResponse.text);
       Object.assign(songData, culturalData);
       successfulTurns++;
@@ -552,6 +681,39 @@ Keep descriptions concise (1-2 sentences each).`;
       const musicResponse = await chat.sendMessage({ message: musicPrompt });
       console.log('📥 Turn 3 response:', musicResponse.text?.length || 0, 'chars');
       
+      // 🔍 EXTRACT GROUNDING URLs from Turn 3 response
+      let turn3SearchUrls: Array<{url: string, title?: string, source?: string}> = [];
+      if (musicResponse.candidates && musicResponse.candidates.length > 0) {
+        const firstCandidate = musicResponse.candidates[0];
+        const groundingMetadata = firstCandidate?.grounding_metadata || firstCandidate?.groundingMetadata;
+        
+        if (groundingMetadata?.grounding_chunks || groundingMetadata?.groundingChunks) {
+          const chunks = groundingMetadata.grounding_chunks || groundingMetadata.groundingChunks;
+          if (Array.isArray(chunks)) {
+            turn3SearchUrls = chunks
+              .filter(chunk => chunk && (chunk.web || chunk.uri))
+              .map(chunk => {
+                const uri = chunk.web?.uri || chunk.uri;
+                const title = chunk.web?.title || chunk.title;
+                let source = 'unknown';
+                try {
+                  const domain = new URL(uri).hostname.toLowerCase();
+                  if (domain.includes('wikipedia')) source = 'Wikipedia';
+                  else if (domain.includes('todotango')) source = 'TodoTango';
+                  else if (domain.includes('tango.info')) source = 'tango.info';
+                  else if (domain.includes('secondhandsongs')) source = 'SecondHandSongs';
+                  else if (domain.includes('tangodc')) source = 'TangoDC';
+                  else source = domain;
+                } catch (e) {
+                  source = 'unknown';
+                }
+                return { url: uri, title: title, source: source };
+              });
+          }
+        }
+      }
+      console.log('🔍 Turn 3 - Extracted', turn3SearchUrls.length, 'grounding URLs');
+      
       const musicData = this.parseJSONWithRepair(musicResponse.text);
       Object.assign(songData, musicData);
       successfulTurns++;
@@ -612,8 +774,9 @@ Keep descriptions concise (1-2 sentences each).`;
 - Look for historical recordings in tango archives and discographies
 - Find recent performances and contemporary interpretations
 - Check for album information and release years
-- IMPORTANT: Record the exact URLs and website names where you find recording information
+- IMPORTANT: For each notable recording, include an optional "links" array with exact absolute URLs (http or https) where the recording can be heard or where authoritative information is available. Provide the website/platform name in the recordingSources section as well.
 
+JSON SCHEMA (required):
 {
   "notableRecordings": [
     {
@@ -621,7 +784,14 @@ Keep descriptions concise (1-2 sentences each).`;
       "year": year_found_in_search_or_null,
       "album": "album_name_found_in_search_or_null",
       "style": "Traditional" | "Modern" | "Nuevo Tango" | "Electronic",
-      "availability": "currently_available" | "historical" | "unknown"
+      "availability": "currently_available" | "historical" | "unknown",
+      "links": [
+        {
+          "label": "Spotify / YouTube / Discogs entry (optional)",
+          "url": "https://...", // absolute URL required when present
+          "type": "streaming_platform" | "discography" | "archive" | "music_database" | "other" // optional but helpful
+        }
+      ] or null
     }
   ],
   "currentAvailability": {
@@ -638,12 +808,153 @@ Keep descriptions concise (1-2 sentences each).`;
   ] or null
 }
 
+IMPORTANT:
+- Always return valid JSON only. Do not include explanatory text or markdown.
+- Use null for unknown values. Do not fabricate years or URLs.
+- When providing URLs, use absolute http(s) links only.
+
 Prioritize current/recent recordings found through search. Limit to 3-5 most significant recordings.`;
       
-      const recordingResponse = await chat.sendMessage({ message: recordingPrompt });
-      console.log('📥 Turn 4 response:', recordingResponse.text?.length || 0, 'chars');
+      console.log('🔍 DEBUG Turn 4 - Sending prompt to LLM');
+      console.log('🔍 DEBUG Turn 4 - Prompt length:', recordingPrompt.length);
+      console.log('🔍 DEBUG Turn 4 - Chat object:', !!chat);
       
-      const recordingData = this.parseJSONWithRepair(recordingResponse.text);
+      const recordingResponse = await chat.sendMessage({ message: recordingPrompt });
+      
+      // Extract the actual text content from response structure
+      let responseText: string | undefined = recordingResponse.text;
+      
+      // Fallback: try to extract from candidates structure if .text doesn't exist
+      if (!responseText && recordingResponse.candidates && recordingResponse.candidates.length > 0) {
+        const firstCandidate = recordingResponse.candidates[0];
+        if (firstCandidate?.content?.parts && firstCandidate.content.parts.length > 0) {
+          responseText = firstCandidate.content.parts[0]?.text;
+        }
+      }
+      
+      // Fallback: try to extract from response.text
+      if (!responseText && recordingResponse.response?.text) {
+        responseText = recordingResponse.response.text;
+      }
+
+      // 🔍 CRITICAL FIX: Extract real URLs from Google Search Grounding metadata
+      let realSearchUrls: Array<{url: string, title?: string, source?: string}> = [];
+      
+      // 🔍 DEBUG: Log the complete response structure to understand why grounding_metadata is missing
+      console.log('🔍 FULL RESPONSE DEBUG - Complete structure:');
+      console.log('- Response type:', typeof recordingResponse);
+      console.log('- Response keys:', Object.keys(recordingResponse || {}));
+      console.log('- Raw response object:', JSON.stringify(recordingResponse, null, 2));
+      
+      if (recordingResponse.candidates && recordingResponse.candidates.length > 0) {
+        const firstCandidate = recordingResponse.candidates[0];
+        console.log('🔍 CANDIDATE DEBUG:');
+        console.log('- Candidate keys:', Object.keys(firstCandidate || {}));
+        console.log('- Candidate structure:', JSON.stringify(firstCandidate, null, 2));
+        
+        const groundingMetadata = firstCandidate?.grounding_metadata || firstCandidate?.groundingMetadata;
+        console.log('🔍 GROUNDING DEBUG:');
+        console.log('- grounding_metadata exists:', !!firstCandidate?.grounding_metadata);
+        console.log('- groundingMetadata exists:', !!firstCandidate?.groundingMetadata);
+        console.log('- Combined groundingMetadata:', groundingMetadata);
+        
+        if (groundingMetadata?.grounding_chunks || groundingMetadata?.groundingChunks) {
+          const chunks = groundingMetadata.grounding_chunks || groundingMetadata.groundingChunks;
+          
+          if (Array.isArray(chunks)) {
+            realSearchUrls = chunks
+              .filter(chunk => chunk && (chunk.web || chunk.uri))
+              .map(chunk => {
+                const uri = chunk.web?.uri || chunk.uri;
+                const title = chunk.web?.title || chunk.title;
+                
+                // Extract source domain for better categorization
+                let source = 'unknown';
+                try {
+                  const domain = new URL(uri).hostname.toLowerCase();
+                  if (domain.includes('youtube') || domain.includes('youtu.be')) source = 'YouTube';
+                  else if (domain.includes('spotify')) source = 'Spotify';
+                  else if (domain.includes('apple') && domain.includes('music')) source = 'Apple Music';
+                  else if (domain.includes('discogs')) source = 'Discogs';
+                  else if (domain.includes('tango.info')) source = 'tango.info';
+                  else if (domain.includes('wikipedia')) source = 'Wikipedia';
+                  else if (domain.includes('secondhandsongs')) source = 'SecondHandSongs';
+                  else source = domain;
+                } catch (e) {
+                  // Keep 'unknown' if URL parsing fails
+                }
+                
+                return { url: uri, title, source };
+              })
+              .filter(item => item.url && /^https?:\/\//i.test(item.url));
+          }
+        }
+        
+        // Also check for search queries used
+        const searchQueries = groundingMetadata?.web_search_queries || groundingMetadata?.webSearchQueries || [];
+        console.log('🔍 Search queries used:', searchQueries);
+      } else {
+        console.log('🔍 CANDIDATES DEBUG: No candidates found in response');
+      }
+      
+      console.log('� Turn 4 response:', responseText?.length || 0, 'chars');
+      console.log('🔍 Real search URLs found:', realSearchUrls.length);
+      console.log('🔍 Real URLs:', realSearchUrls.map(u => `${u.source}: ${u.url}`).join(', '));
+      
+      // Debug logging (reduced for clarity)
+      console.log('🔍 DEBUG Turn 4 - Response structure validated:', !!recordingResponse.candidates);
+      console.log('🔍 DEBUG Turn 4 - Grounding metadata present:', !!(recordingResponse.candidates?.[0]?.grounding_metadata || recordingResponse.candidates?.[0]?.groundingMetadata));
+      
+      const recordingData = this.parseJSONWithRepair(responseText || '');
+      
+      // 🔍 CRITICAL FIX: Inject real search URLs into the parsed data
+      if (realSearchUrls.length > 0) {
+        // Create recordingSources from real search results
+        const realRecordingSources = realSearchUrls.map(item => ({
+          title: item.title || item.source,
+          url: item.url,
+          type: this.categorizeUrlType(item.url, item.source || ''),
+          content: `Found via Google Search: ${item.title || 'Recording information'}`
+        }));
+        
+        // Replace or enhance existing recordingSources
+        recordingData.recordingSources = realRecordingSources;
+        
+        // Enhance notableRecordings with real links if they exist
+        if (recordingData.notableRecordings && Array.isArray(recordingData.notableRecordings)) {
+          recordingData.notableRecordings = recordingData.notableRecordings.map((recording: any, index: number) => {
+            // Try to intelligently match recordings to URLs
+            const relevantUrls = realSearchUrls.filter(urlItem => {
+              const urlText = (urlItem.url + ' ' + (urlItem.title || '')).toLowerCase();
+              const artistName = (recording.artist || '').toLowerCase();
+              
+              // Match by artist name or if it's a general music platform
+              return urlText.includes(artistName) || 
+                     urlItem.source === 'YouTube' ||
+                     urlItem.source === 'Spotify' ||
+                     urlItem.source === 'Discogs';
+            });
+            
+            // If we have relevant URLs, use them; otherwise distribute available URLs
+            const urlsToUse = relevantUrls.length > 0 ? relevantUrls : 
+                             (index < realSearchUrls.length ? [realSearchUrls[index]] : []);
+            
+            return {
+              ...recording,
+              links: urlsToUse.map(urlItem => ({
+                label: urlItem.title || urlItem.source,
+                url: urlItem.url,
+                type: this.categorizeUrlType(urlItem.url, urlItem.source || '')
+              }))
+            };
+          });
+        }
+        
+        console.log('✅ Enhanced recording data with real search URLs');
+        console.log('- Real sources added:', realRecordingSources.length);
+        console.log('- Recordings enhanced with links:', recordingData.notableRecordings?.length || 0);
+      }
+      
       Object.assign(songData, recordingData);
       successfulTurns++;
       this.emitProgress(4, "✅ Recordings and performers found", "✅", true, progressCallback);
@@ -660,64 +971,13 @@ Prioritize current/recent recordings found through search. Limit to 3-5 most sig
       
       // URL Recovery Logic - If JSON parsing failed, try to extract URLs manually
       if ((!recordingData.currentAvailability && !recordingData.recordingSources) && recordingResponse.text) {
-        console.log('🛠️ PHASE 4 RECOVERY - No URL fields found, attempting manual extraction from raw response');
+        console.log('🛠️ PHASE 4 RECOVERY - Delegating to recovery helper');
         try {
-          // Extract URLs using regex
-          const urlRegex = /(https?:\/\/[^\s"'\],}]+)/g;
-          const extractedUrls = recordingResponse.text.match(urlRegex) || [];
-          
-          if (extractedUrls.length > 0) {
-            console.log('🔍 PHASE 4 RECOVERY - Found URLs in raw response:', extractedUrls);
-            
-            // Categorize URLs
-            const streamingUrls = extractedUrls.filter((url: string) => 
-              url.includes('spotify') || url.includes('apple') || url.includes('youtube') || 
-              url.includes('amazon') || url.includes('bandcamp') || url.includes('soundcloud')
-            );
-            
-            const researchUrls = extractedUrls.filter((url: string) => 
-              url.includes('discogs') || url.includes('archive') || url.includes('library') ||
-              url.includes('wikipedia') || url.includes('tango') || url.includes('music')
-            );
-            
-            // Override the recordingData with recovered URLs in proper object format
-            if (streamingUrls.length > 0) {
-              recordingData.currentAvailability = {
-                streamingPlatforms: streamingUrls.map((url: string) => {
-                  if (url.includes('spotify')) return 'Spotify';
-                  if (url.includes('apple')) return 'Apple Music';
-                  if (url.includes('youtube')) return 'YouTube Music';
-                  if (url.includes('amazon')) return 'Amazon Music';
-                  return url.split('/')[2] || 'Unknown Platform';
-                }),
-                recentPerformances: null
-              };
-            }
-            
-            if (researchUrls.length > 0) {
-              recordingData.recordingSources = researchUrls.map((url: string) => ({
-                title: url.includes('todotango') ? 'Todo Tango' :
-                       url.includes('tango.info') ? 'Tango.info' :
-                       url.includes('wikipedia') ? 'Wikipedia' :
-                       url.includes('discogs') ? 'Discogs' :
-                       url.split('/')[2] || 'Music Database',
-                url: url,
-                type: url.includes('spotify') || url.includes('apple') || url.includes('youtube') ? 'streaming_platform' :
-                      url.includes('discogs') ? 'discography' :
-                      url.includes('wikipedia') ? 'encyclopedia' :
-                      'database',
-                content: `Information source for La Cumparsita recordings and availability.`
-              }));
-            }
-            
-            recordingData.allSearchFindings = extractedUrls;
-            
-            console.log('✅ PHASE 4 RECOVERY - URLs recovered and added to recordingData');
-            console.log('- Streaming URLs:', streamingUrls.length);
-            console.log('- Research URLs:', researchUrls.length);
-          }
+          // Use shared recovery helper to extract and conservatively associate links
+          Object.assign(recordingData, recoverPhase4FromText(recordingResponse.text, recordingData));
+          console.log('✅ PHASE 4 RECOVERY - Helper completed');
         } catch (error) {
-          console.error('❌ PHASE 4 RECOVERY - Failed to recover URL data:', error);
+          console.error('❌ PHASE 4 RECOVERY - Helper failed:', error);
         }
       }
       
@@ -727,10 +987,56 @@ Prioritize current/recent recordings found through search. Limit to 3-5 most sig
         try {
           // CRITICAL FIX: Store each field as top-level document fields, not nested under notableRecordings
           const songRef = doc(db, 'songs', params.songId);
+          // Normalize notableRecordings.links and recordingSources before persisting
+          const normalizeLinksArrayLocal = (links: any): any[] => {
+            if (!Array.isArray(links)) return [];
+            return links.map((link: any) => {
+              if (!link) return null;
+              const url = (link.url || link.link || '').toString().trim();
+              if (!/^https?:\/\//i.test(url)) return null;
+              const label = (link.label || link.title || '').toString().trim() || undefined;
+              const type = link.type || (url.includes('spotify') ? 'streaming_platform' : url.includes('discogs') ? 'discography' : url.includes('youtube') ? 'streaming_platform' : undefined);
+              return { label, url, type };
+            }).filter(Boolean);
+          };
+
+          const normalizeRecordingSourcesLocal = (sources: any): any[] => {
+            if (!Array.isArray(sources)) return [];
+            return sources.map((s: any) => {
+              if (!s) return null;
+              if (typeof s === 'string') {
+                const url = s.trim();
+                if (!/^https?:\/\//i.test(url)) return null;
+                return { title: undefined, url, type: undefined };
+              }
+              const url = (s.url || s.link || '').toString().trim();
+              if (!/^https?:\/\//i.test(url)) return null;
+              return { title: s.title || s.label || undefined, url, type: s.type };
+            }).filter(Boolean);
+          };
+
+          // Accept both array form and object form { recordings: [...] }
+          const rawNotable = Array.isArray(recordingData.notableRecordings)
+            ? recordingData.notableRecordings
+            : (recordingData.notableRecordings && Array.isArray(recordingData.notableRecordings.recordings))
+              ? recordingData.notableRecordings.recordings
+              : [];
+
+          const normalizedNotableRecordings = rawNotable.map((r: any) => ({
+            ...r,
+            links: normalizeLinksArrayLocal(r.links || [])
+          }));
+
+          const normalizedRecordingSources = normalizeRecordingSourcesLocal(recordingData.recordingSources || []);
+
           const updateData = {
-            notableRecordings: recordingData.notableRecordings || [],
+            // Persist notableRecordings as an object with recordings/searchFindings for compatibility
+            notableRecordings: {
+              recordings: normalizedNotableRecordings,
+              searchFindings: recordingData.searchFindings || []
+            },
             currentAvailability: recordingData.currentAvailability || null,
-            recordingSources: recordingData.recordingSources || [],
+            recordingSources: normalizedRecordingSources,
             lastUpdated: Timestamp.now(),
             lastResearchUpdate: Timestamp.now()
           };
@@ -780,6 +1086,39 @@ The explanation should weave together the musical, cultural, and historical aspe
       
       const summaryResponse = await chat.sendMessage({ message: summaryPrompt });
       console.log('📥 Turn 5 response:', summaryResponse.text?.length || 0, 'chars');
+      
+      // 🔍 EXTRACT GROUNDING URLs from Turn 5 response
+      let turn5SearchUrls: Array<{url: string, title?: string, source?: string}> = [];
+      if (summaryResponse.candidates && summaryResponse.candidates.length > 0) {
+        const firstCandidate = summaryResponse.candidates[0];
+        const groundingMetadata = firstCandidate?.grounding_metadata || firstCandidate?.groundingMetadata;
+        
+        if (groundingMetadata?.grounding_chunks || groundingMetadata?.groundingChunks) {
+          const chunks = groundingMetadata.grounding_chunks || groundingMetadata.groundingChunks;
+          if (Array.isArray(chunks)) {
+            turn5SearchUrls = chunks
+              .filter(chunk => chunk && (chunk.web || chunk.uri))
+              .map(chunk => {
+                const uri = chunk.web?.uri || chunk.uri;
+                const title = chunk.web?.title || chunk.title;
+                let source = 'unknown';
+                try {
+                  const domain = new URL(uri).hostname.toLowerCase();
+                  if (domain.includes('wikipedia')) source = 'Wikipedia';
+                  else if (domain.includes('todotango')) source = 'TodoTango';
+                  else if (domain.includes('tango.info')) source = 'tango.info';
+                  else if (domain.includes('secondhandsongs')) source = 'SecondHandSongs';
+                  else if (domain.includes('tangodc')) source = 'TangoDC';
+                  else source = domain;
+                } catch (e) {
+                  source = 'unknown';
+                }
+                return { url: uri, title: title, source: source };
+              });
+          }
+        }
+      }
+      console.log('🔍 Turn 5 - Extracted', turn5SearchUrls.length, 'grounding URLs');
       
       const summaryData = this.parseJSONWithRepair(summaryResponse.text);
       Object.assign(songData, summaryData);
@@ -882,18 +1221,33 @@ The explanation should weave together the musical, cultural, and historical aspe
       return {};
     }
 
+    console.log('🔍 DEBUG parseJSONWithRepair - Input text length:', text.length);
+    console.log('🔍 DEBUG parseJSONWithRepair - First 500 chars:', text.substring(0, 500));
+
     // Remove markdown code blocks if present
     let cleanText = text.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+    console.log('🔍 DEBUG parseJSONWithRepair - After removing markdown, length:', cleanText.length);
     
     // Try to find JSON within the text
     const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       cleanText = jsonMatch[0];
+      console.log('🔍 DEBUG parseJSONWithRepair - JSON match found, length:', cleanText.length);
+      console.log('🔍 DEBUG parseJSONWithRepair - JSON content preview:', cleanText.substring(0, 300));
+    } else {
+      console.warn('⚠️ DEBUG parseJSONWithRepair - No JSON pattern found in text');
     }
 
     try {
       const parsed = JSON.parse(cleanText);
       console.log('✅ JSON parsed successfully');
+      console.log('🔍 DEBUG parseJSONWithRepair - Parsed object keys:', Object.keys(parsed));
+      if (parsed.notableRecordings) {
+        console.log('🔍 DEBUG parseJSONWithRepair - notableRecordings present:', Array.isArray(parsed.notableRecordings) ? parsed.notableRecordings.length : typeof parsed.notableRecordings);
+        console.log('🔍 DEBUG parseJSONWithRepair - notableRecordings structure:', JSON.stringify(parsed.notableRecordings, null, 2));
+      } else {
+        console.warn('⚠️ DEBUG parseJSONWithRepair - notableRecordings field is missing from parsed JSON');
+      }
       return parsed;
     } catch (parseError) {
       console.warn('⚠️ JSON parse failed, attempting repair:', (parseError as Error).message);
@@ -907,6 +1261,13 @@ The explanation should weave together the musical, cultural, and historical aspe
         
         const repairedResult = JSON.parse(cleanText);
         console.log('✅ JSON repair successful');
+        console.log('🔍 DEBUG parseJSONWithRepair - Repaired object keys:', Object.keys(repairedResult));
+        if (repairedResult.notableRecordings) {
+          console.log('🔍 DEBUG parseJSONWithRepair - notableRecordings present after repair:', Array.isArray(repairedResult.notableRecordings) ? repairedResult.notableRecordings.length : typeof repairedResult.notableRecordings);
+          console.log('🔍 DEBUG parseJSONWithRepair - notableRecordings structure after repair:', JSON.stringify(repairedResult.notableRecordings, null, 2));
+        } else {
+          console.warn('⚠️ DEBUG parseJSONWithRepair - notableRecordings field is missing from repaired JSON');
+        }
         return repairedResult;
       } catch (repairError) {
         console.error('❌ JSON repair also failed:', (repairError as Error).message);

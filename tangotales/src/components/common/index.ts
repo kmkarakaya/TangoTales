@@ -8,3 +8,7 @@ export { default as PartialDataIndicator } from './PartialDataIndicator';
 export { default as DataVisualization } from './DataVisualization';
 export { default as AdvancedFilter } from './AdvancedFilter';
 export { default as PerformanceMetrics } from './PerformanceMetrics';
+export { default as VerificationBadge } from './VerificationBadge';
+export { default as VerifiedLink } from './VerifiedLink';
+export type { VerificationStatus, VerificationBadgeProps } from './VerificationBadge';
+export type { VerifiedLinkProps } from './VerifiedLink';

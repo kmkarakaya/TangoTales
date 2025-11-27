@@ -1,5 +1,6 @@
 import React from 'react';
 import { Song, Performer } from '../../types/song';
+import NotableRecordingLinks from '../common/NotableRecordingLinks';
 
 interface EnhancedSongDetailProps {
   song: Song;
@@ -16,20 +17,7 @@ export const EnhancedSongDetail: React.FC<EnhancedSongDetailProps> = ({
   isEnhancing = false,
   className = ""
 }) => {
-  const renderRecording = (recording: any, index: number) => (
-    <div key={index} className="bg-white/5 rounded-lg p-3 border border-white/10">
-      <div className="font-medium text-white/90">{recording.artist}</div>
-      {recording.label && (
-        <div className="text-sm text-white/70">{recording.label}</div>
-      )}
-      {recording.year && (
-        <div className="text-sm text-white/60">{recording.year}</div>
-      )}
-      {recording.significance && (
-        <div className="text-sm text-white/80 mt-1">{recording.significance}</div>
-      )}
-    </div>
-  );
+
 
   const renderPerformer = (performer: Performer, index: number) => (
     <div key={index} className="bg-white/5 rounded-lg p-3 border border-white/10">
@@ -89,6 +77,13 @@ export const EnhancedSongDetail: React.FC<EnhancedSongDetailProps> = ({
       </span>
     );
   };
+
+  // Normalize notable recordings shape: accept either { recordings: [...] } or plain array
+  const notableRecordingsList: any[] = Array.isArray((song as any).notableRecordings)
+    ? (song as any).notableRecordings
+    : (song as any).notableRecordings?.recordings || [];
+
+
 
   return (
     <div className={`bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-sm rounded-xl border border-white/20 ${className}`}>
@@ -255,15 +250,6 @@ export const EnhancedSongDetail: React.FC<EnhancedSongDetailProps> = ({
           song.themes.length > 0
         )}
 
-        {/* Notable Recordings */}
-        {renderSection(
-          "Notable Recordings",
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {song.notableRecordings?.recordings?.map(renderRecording)}
-          </div>,
-          (song.notableRecordings?.recordings?.length || 0) > 0
-        )}
-
         {/* Notable Performers */}
         {renderSection(
           "Notable Performers",
@@ -284,8 +270,8 @@ export const EnhancedSongDetail: React.FC<EnhancedSongDetailProps> = ({
         {renderSection(
           "Notable Recordings",
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {(song.notableRecordings as any)?.length > 0 ? (
-              (song.notableRecordings as any).map((recording: any, index: number) => (
+            {notableRecordingsList.length > 0 ? (
+              notableRecordingsList.map((recording: any, index: number) => (
                 <div key={index} className="bg-white/5 rounded-lg p-4 border border-white/10">
                   <div className="font-medium text-white/90">{recording.artist}</div>
                   {recording.year && (
@@ -298,16 +284,24 @@ export const EnhancedSongDetail: React.FC<EnhancedSongDetailProps> = ({
                     <div className="text-sm text-white/60">Style: {recording.style}</div>
                   )}
                   {recording.availability && (
-                    <div className={`text-sm mt-2 ${
-                      recording.availability === 'currently_available' 
-                        ? 'text-green-400' 
-                        : recording.availability === 'historical' 
-                        ? 'text-amber-400' 
-                        : 'text-white/60'
-                    }`}>
-                      {recording.availability === 'currently_available' ? '✅ Available' : 
-                       recording.availability === 'historical' ? '📜 Historical' : 
-                       recording.availability}
+                    <div className="mt-2 flex items-center justify-between">
+                      <div className={`text-sm ${
+                        recording.availability === 'currently_available' 
+                          ? 'text-green-400' 
+                          : recording.availability === 'historical' 
+                          ? 'text-amber-400' 
+                          : 'text-white/60'
+                      }`}>
+                        {recording.availability === 'currently_available' ? '✅ Available' : 
+                         recording.availability === 'historical' ? '📜 Historical' : 
+                         recording.availability}
+                      </div>
+                      {/* Render links adjacent to availability */}
+                      {recording.links && recording.links.length > 0 && (
+                        <div className="ml-3">
+                          <NotableRecordingLinks links={recording.links} songId={(song as any).id} recordingIndex={index} />
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -316,7 +310,7 @@ export const EnhancedSongDetail: React.FC<EnhancedSongDetailProps> = ({
               <div className="text-white/60 italic">No notable recordings available yet.</div>
             )}
           </div>,
-          (song.notableRecordings as any)?.length > 0
+          notableRecordingsList.length > 0
         )}
 
         {/* Full Explanation */}
@@ -434,14 +428,40 @@ export const EnhancedSongDetail: React.FC<EnhancedSongDetailProps> = ({
                 <h4 className="text-sm font-medium text-white/80 mb-2">🎭 Recent Performances</h4>
                 <div className="space-y-1">
                   {Array.isArray((song.currentAvailability as any).recentPerformances) ? (
-                    (song.currentAvailability as any).recentPerformances.map((performance: string, index: number) => (
-                      <div key={index} className="text-sm text-white/70 bg-white/5 rounded px-3 py-2">
-                        {performance}
-                      </div>
-                    ))
+                    (song.currentAvailability as any).recentPerformances.map((performance: string, index: number) => {
+                      // Extract venue and date if available, create searchable link
+                      const searchQuery = encodeURIComponent(`"${song.title}" tango performance ${performance}`);
+                      const searchUrl = `https://www.google.com/search?q=${searchQuery}`;
+                      
+                      return (
+                        <div key={index} className="text-sm text-white/70 bg-white/5 rounded px-3 py-2 hover:bg-white/10 transition-colors">
+                          <a 
+                            href={searchUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-between group"
+                          >
+                            <span>{performance}</span>
+                            <span className="text-white/40 group-hover:text-white/60 transition-colors ml-2">
+                              🔍
+                            </span>
+                          </a>
+                        </div>
+                      );
+                    })
                   ) : (
-                    <div className="text-sm text-white/70 bg-white/5 rounded px-3 py-2">
-                      {(song.currentAvailability as any).recentPerformances}
+                    <div className="text-sm text-white/70 bg-white/5 rounded px-3 py-2 hover:bg-white/10 transition-colors">
+                      <a 
+                        href={`https://www.google.com/search?q=${encodeURIComponent(`"${song.title}" tango performance ${(song.currentAvailability as any).recentPerformances}`)}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-between group"
+                      >
+                        <span>{(song.currentAvailability as any).recentPerformances}</span>
+                        <span className="text-white/40 group-hover:text-white/60 transition-colors ml-2">
+                          🔍
+                        </span>
+                      </a>
                     </div>
                   )}
                 </div>
