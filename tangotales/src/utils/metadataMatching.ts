@@ -88,10 +88,7 @@ export function matchMetadata(
   landingPageSnippet: string | undefined,
   expectedMetadata: MetadataTokens
 ): MatchResult {
-<<<<<<< HEAD
-=======
   const tokens = extractTokens(expectedMetadata);
->>>>>>> 560735ea8190f5e54165f98a5d3b3031e5fdeb4b
   const matchedTokens: string[] = [];
   
   if (!landingPageTitle && !landingPageSnippet) {
