@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { StarRating, PartialDataIndicator } from '../common';
+import { StarRating, PartialDataIndicator, LoadingSpinner } from '../common';
 import { addRating } from '../../services/firestore';
 import { Song } from '../../types/song';
 import DetailedSongModal from './DetailedSongModal';
@@ -171,7 +171,7 @@ export const EnhancedSongCard: React.FC<EnhancedSongCardProps> = ({
         {/* Loading indicator */}
         {isLoading && (
           <div className="absolute inset-0 bg-white bg-opacity-50 flex items-center justify-center rounded-lg">
-            <div className="animate-spin rounded-full h-6 w-6 border-2 border-blue-600 border-t-transparent"></div>
+            <LoadingSpinner size="sm" message="" className="p-0" />
           </div>
         )}
 

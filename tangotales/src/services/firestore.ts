@@ -20,6 +20,24 @@ import { songInformationService } from './enhancedGemini';
 import { getSampleSongByTitle, createSongFromSample } from '../utils/sampleSongs';
 import { prepareTitle, generateSongId } from '../utils/titleFormatter';
 
+// Helper: validate an absolute http(s) URL
+const isAbsoluteHttpUrl = (u: any): boolean => {
+  return typeof u === 'string' && /^https?:\/\//i.test(u.trim());
+};
+
+// Normalize links to consistent objects and filter invalid URLs
+const normalizeLinksArray = (links: any[]): any[] => {
+  if (!Array.isArray(links)) return [];
+  return links.map((l: any) => {
+    if (!l) return null;
+    const url = (l.url || l.link || '').toString().trim();
+    if (!isAbsoluteHttpUrl(url)) return null;
+    const label = (l.label || l.title || '').toString().trim() || undefined;
+    const type = l.type || (url.includes('spotify') ? 'streaming_platform' : url.includes('discogs') ? 'discography' : undefined);
+    return { label, url, type };
+  }).filter(Boolean);
+};
+
 // Helper function to convert Firestore timestamp to Date
 const convertTimestamp = (timestamp: any): Date => {
   if (timestamp && timestamp.toDate) {
@@ -113,6 +131,35 @@ const convertRatingData = (id: string, data: DocumentData): Rating => ({
   comment: data.comment,
   timestamp: convertTimestamp(data.timestamp)
 });
+
+// Merge recordingSources with links found on notableRecordings (avoid duplicates)
+const mergeRecordingSources = (existingSources: any[], notableRecordings: any[]): any[] => {
+  const aggregated = Array.isArray(existingSources) ? [...existingSources] : [];
+
+  // Collect existing URLs to avoid duplicates
+  const existingUrls = new Set(aggregated.map(s => (s && s.url) ? s.url : s));
+
+  if (Array.isArray(notableRecordings)) {
+    notableRecordings.forEach((r: any) => {
+      if (r && Array.isArray(r.links)) {
+        r.links.forEach((lnk: any) => {
+          const url = lnk && lnk.url ? lnk.url : null;
+          if (url && !existingUrls.has(url)) {
+            existingUrls.add(url);
+            aggregated.push({
+              title: lnk.label || r.artist || url.split('/')[2] || 'Link',
+              url,
+              type: lnk.type || 'other',
+              content: `Link associated with recording: ${r.artist || r.album || 'unknown'}`
+            });
+          }
+        });
+      }
+    });
+  }
+
+  return aggregated;
+};
 
 /**
  * Get a song by its ID from Firestore
@@ -247,7 +294,7 @@ export const createSong = async (songData: Omit<Song, 'id' | 'createdAt' | 'last
     const songId = generateSongId(formattedTitle);
 
     const now = Timestamp.now();
-    const newSong = {
+  const newSong = {
       // Primary identification
       title: formattedTitle,
       originalTitle: songData.originalTitle,
@@ -272,7 +319,12 @@ export const createSong = async (songData: Omit<Song, 'id' | 'createdAt' | 'last
       danceStyle: songData.danceStyle || [],
       
       // Performance information
-      notableRecordings: songData.notableRecordings || [],
+      notableRecordings: Array.isArray(songData.notableRecordings)
+        ? songData.notableRecordings.map((r: any) => ({
+            ...r,
+            links: normalizeLinksArray(r.links || [])
+          }))
+        : [],
       notablePerformers: songData.notablePerformers || [],
       recommendedForDancing: songData.recommendedForDancing !== undefined ? songData.recommendedForDancing : true,
       danceRecommendations: songData.danceRecommendations,
@@ -324,6 +376,19 @@ export const createEnhancedSong = async (
     // Sanitize data to ensure Firebase compatibility (no undefined values)
     const sanitizeValue = (value: any) => value === undefined ? null : value;
     
+    // normalize notable recordings first so we can reuse for merging recordingSources
+    // Accept both array form and object form { recordings: [...] }
+    const rawNotableFromEnhanced = Array.isArray(enhancedData.notableRecordings)
+      ? enhancedData.notableRecordings
+      : (enhancedData.notableRecordings && Array.isArray(enhancedData.notableRecordings.recordings))
+        ? enhancedData.notableRecordings.recordings
+        : [];
+
+    const normalizedNotableRecordings = rawNotableFromEnhanced.map((r: any) => ({
+      ...r,
+      links: normalizeLinksArray(r.links || [])
+    }));
+
     const enhancedSong = {
       // Primary identification
       title: formattedTitle,
@@ -349,7 +414,12 @@ export const createEnhancedSong = async (
       danceStyle: enhancedData.danceStyle || [],
       
       // Performance information from AI
-      notableRecordings: enhancedData.notableRecordings || [],
+      // Ensure nested links inside notable recordings are normalized
+      // Persist as an object matching the NotableRecordings interface
+      notableRecordings: {
+        recordings: normalizedNotableRecordings,
+        searchFindings: enhancedData.notableRecordings && enhancedData.notableRecordings.searchFindings ? enhancedData.notableRecordings.searchFindings : []
+      },
       notablePerformers: enhancedData.notablePerformers || [],
       recommendedForDancing: enhancedData.recommendedForDancing !== undefined ? 
         enhancedData.recommendedForDancing : true,
@@ -357,7 +427,21 @@ export const createEnhancedSong = async (
       
       // CRITICAL: URL and streaming platform data
       currentAvailability: enhancedData.currentAvailability || null,
-      recordingSources: enhancedData.recordingSources || [],
+      // Merge recovered/explicit links into recordingSources for discoverability
+      // Use the normalized notableRecordings we just built and normalize any existing recordingSources
+      recordingSources: mergeRecordingSources(
+        // normalize existing recordingSources array (may contain url strings or objects)
+        Array.isArray(enhancedData.recordingSources) ? enhancedData.recordingSources.map((s: any) => {
+          if (!s) return null;
+          if (typeof s === 'string') return { url: s };
+          // preserve shape but ensure url is valid
+          const url = s.url || s.link || null;
+          if (url && isAbsoluteHttpUrl(url)) return { title: s.title || s.label || undefined, url, type: s.type };
+          return null;
+        }).filter(Boolean) : [],
+        // normalized notable recordings (same mapping as above)
+        normalizedNotableRecordings
+      ),
       alternativeSpellings: enhancedData.alternativeSpellings || [],
       allSearchFindings: enhancedData.allSearchFindings || [],
       
@@ -406,7 +490,14 @@ export const updateSong = async (songId: string, updates: Partial<Song>): Promis
     // Remove fields that shouldn't be updated directly
     delete updateData.id;
     delete updateData.createdAt;
-    
+    // Normalize notableRecordings links if present in the update payload
+    if (updateData.notableRecordings && Array.isArray(updateData.notableRecordings)) {
+      updateData.notableRecordings = updateData.notableRecordings.map((r: any) => ({
+        ...r,
+        links: normalizeLinksArray(r.links || [])
+      }));
+    }
+
     await updateDoc(songRef, updateData);
   } catch (error) {
     console.error('Error updating song:', error);
@@ -778,9 +869,11 @@ export const updateSongWithEnhancedData = async (
       musicalCharacteristics: aiResult.musicalCharacteristics || [],
       danceStyle: aiResult.danceStyle || [],
       
-      // Enhanced performance information
-      notableRecordings: aiResult.notableRecordings || [],
-      notablePerformers: aiResult.notablePerformers || [],
+  // Enhanced performance information
+  notableRecordings: (aiResult.notableRecordings || []).map((r: any) => ({ ...r, links: normalizeLinksArray(r.links || []) })),
+  notablePerformers: aiResult.notablePerformers || [],
+  // Merge any links from notable recordings into recordingSources for discoverability
+  recordingSources: mergeRecordingSources(aiResult.recordingSources || [], aiResult.notableRecordings || []),
       recommendedForDancing: aiResult.recommendedForDancing !== undefined ? aiResult.recommendedForDancing : true,
       danceRecommendations: aiResult.danceRecommendations || undefined,
       
@@ -919,6 +1012,18 @@ export const updateSongWithResearchData = async (
     // Add search findings to allSearchFindings array
     if (phaseData.data.searchFindings && Array.isArray(phaseData.data.searchFindings)) {
       updateData.allSearchFindings = [...(phaseData.data.allSearchFindings || []), ...phaseData.data.searchFindings];
+    }
+
+    // If this phase provides notableRecordings, normalize their links and merge into recordingSources
+    if (phaseData.phase === 'notable_recordings' && phaseData.data) {
+      try {
+        const normalized = (phaseData.data.notableRecordings || []).map((r: any) => ({ ...r, links: normalizeLinksArray(r.links || []) }));
+        updateData.notableRecordings = normalized;
+        // Merge with existing recordingSources if any
+        updateData.recordingSources = mergeRecordingSources(phaseData.data.recordingSources || [], normalized);
+      } catch (e) {
+        console.warn('Failed to normalize notable_recordings phase data:', e);
+      }
     }
 
     await updateDoc(songRef, updateData);

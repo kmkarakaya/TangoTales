@@ -336,7 +336,14 @@ Keep descriptions concise (1-2 sentences each).`;
       "artist": "Artist Name",
       "orchestra": "Orchestra name or null",
       "year": year_number_or_null,
-      "significance": "brief description"
+      "significance": "brief description",
+      "links": [
+        {
+          "label": "Spotify / YouTube / Discogs (optional)",
+          "url": "https://...",
+          "type": "streaming_platform" | "discography" | "archive" | "music_database" | "other"
+        }
+      ] or null
     }
   ],
   "notablePerformers": [
@@ -348,7 +355,7 @@ Keep descriptions concise (1-2 sentences each).`;
   ]
 }
 
-Use empty arrays [] if no notable recordings/performers are known.`;
+IMPORTANT: Return valid JSON only. When providing URLs, use absolute http(s) links. Use null for unknown values and empty arrays when nothing is known.`;
       
       const performersResponse = await chat.sendMessage({ message: performersPrompt });
       console.log('📥 Turn 4 response:', performersResponse.text?.length || 0, 'chars');

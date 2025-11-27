@@ -30,7 +30,12 @@ export const parsePhaseResponse = <T>(
     }
 
     const jsonData = JSON.parse(jsonMatch[0]);
-    
+
+    // If the phase may contain recording links, normalize link objects
+    if (phase === 'phase4' || phase === 'phase5' || phase === 'notable_recordings') {
+      normalizeLinksInData(jsonData);
+    }
+
     // Basic validation based on phase
     const validationResult = validatePhaseData(jsonData, phase);
     if (!validationResult.isValid) {
@@ -175,4 +180,48 @@ export const createFallbackData = (phase: string): any => {
     default:
       return {};
   }
+};
+
+/**
+ * Normalize link objects in known locations of parsed JSON so downstream code
+ * can assume { label?: string, url: string, type?: string } shape and valid http(s) URLs.
+ */
+const normalizeLinksInData = (data: any) => {
+  const isAbsoluteUrl = (u: string) => typeof u === 'string' && /^https?:\/\//i.test(u.trim());
+
+  const normalizeLinksArray = (links: any[]): any[] => {
+    if (!Array.isArray(links)) return links;
+    return links.map(link => {
+      if (!link) return null;
+      const url = (link.url || link.link || '').toString().trim();
+      if (!isAbsoluteUrl(url)) return null; // drop non-absolute urls
+      const label = (link.label || link.title || '').toString().trim() || undefined;
+      const type = (link.type || inferLinkTypeFromUrl(url) || undefined);
+      return { label, url, type };
+    }).filter(Boolean);
+  };
+
+  // normalize notableRecordings[].links
+  if (data.notableRecordings && Array.isArray(data.notableRecordings)) {
+    data.notableRecordings.forEach((r: any) => {
+      if (r.links) r.links = normalizeLinksArray(r.links);
+    });
+  }
+
+  // normalize recordings[].links
+  if (data.recordings && Array.isArray(data.recordings)) {
+    data.recordings.forEach((r: any) => {
+      if (r.links) r.links = normalizeLinksArray(r.links);
+    });
+  }
+};
+
+const inferLinkTypeFromUrl = (url: string): string | undefined => {
+  const u = url.toLowerCase();
+  if (u.includes('spotify')) return 'streaming_platform';
+  if (u.includes('apple')) return 'streaming_platform';
+  if (u.includes('youtube')) return 'streaming_platform';
+  if (u.includes('discogs')) return 'discography';
+  if (u.includes('wikipedia')) return 'archive';
+  return undefined;
 };
