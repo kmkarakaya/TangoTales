@@ -11,7 +11,7 @@ const inferProvider = (url: string, label?: string) => {
   try {
     const hostname = new URL(url).hostname.toLowerCase();
     
-    // Direct URL detection (for non-grounding URLs)
+    // Direct URL detection
     if (hostname.includes('youtube.com') || hostname.includes('youtu.be')) return 'YouTube';
     if (hostname.includes('spotify.com') || hostname.includes('open.spotify.com')) return 'Spotify';
     if (hostname.includes('archive.org')) return 'Archive.org';
@@ -23,32 +23,17 @@ const inferProvider = (url: string, label?: string) => {
     if (hostname.includes('todotango.com')) return 'Todo Tango';
     if (hostname.includes('secondhandsongs.com')) return 'SecondHandSongs';
     
-    // For grounding redirect URLs, use the label which contains the actual destination domain
-    if (hostname.includes('vertexaisearch.cloud.google.com') && label) {
-      const lowerLabel = label.toLowerCase();
-      // Map common domains to friendly names
-      if (lowerLabel.includes('youtube')) return 'YouTube';
-      if (lowerLabel.includes('spotify')) return 'Spotify';
-      if (lowerLabel.includes('apple')) return 'Apple Music';
-      if (lowerLabel.includes('discogs')) return 'Discogs';
-      if (lowerLabel.includes('wikipedia')) return 'Wikipedia';
-      if (lowerLabel.includes('tango.info')) return 'Tango.info';
-      if (lowerLabel.includes('todotango')) return 'Todo Tango';
-      if (lowerLabel.includes('secondhandsongs')) return 'SecondHandSongs';
-      if (lowerLabel.includes('tangodc')) return 'TangoDC';
-      if (lowerLabel.includes('archive.org')) return 'Archive.org';
-      
-      // For other domains, use the domain name directly (capitalize first letter)
-      return lowerLabel.replace(/\.(com|org|net|info)$/, '').replace(/^\w/, c => c.toUpperCase());
-    }
-    
-    // Use label as fallback for provider detection
+    // Fallback: Use label for provider detection if hostname doesn't match
     if (label) {
       const lowerLabel = label.toLowerCase();
       if (lowerLabel.includes('youtube')) return 'YouTube';
       if (lowerLabel.includes('spotify')) return 'Spotify';
       if (lowerLabel.includes('apple')) return 'Apple Music';
       if (lowerLabel.includes('soundcloud')) return 'SoundCloud';
+      if (lowerLabel.includes('discogs')) return 'Discogs';
+      if (lowerLabel.includes('wikipedia')) return 'Wikipedia';
+      if (lowerLabel.includes('tango.info')) return 'Tango.info';
+      if (lowerLabel.includes('todotango')) return 'Todo Tango';
     }
     
     return 'Link';

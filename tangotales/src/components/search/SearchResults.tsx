@@ -807,19 +807,15 @@ const NoResultsFound: React.FC<NoResultsFoundProps> = ({ query, onRefreshSearch,
       {query ? (
         <>
           <h3 className="text-2xl font-bold text-tango-red mb-4">
-            🎶 Thank you! We missed "{query}" in our collection
+            🎶 "{query}" - Not in our database yet
           </h3>
           <div className="text-gray-700 mb-6 max-w-lg mx-auto space-y-3">
             <p className="text-lg font-medium text-tango-dark-red">
-              Let's research this song!
+              Let's research this song together!
             </p>
             <p className="text-gray-600">
-              This tango song isn't in our collection yet, but that's perfectly normal! 
-              Our database grows through passionate tango lovers like you.
-            </p>
-            <p className="text-gray-600">
-              I can research this song's story, lyrics meaning, and historical context using AI, 
-              then save it for everyone to enjoy.
+              Our database grows with every search from tango lovers like you.
+              I'll research this song's history and story using AI, then save it for the community.
             </p>
           </div>
         </>

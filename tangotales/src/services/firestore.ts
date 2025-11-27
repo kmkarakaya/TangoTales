@@ -25,6 +25,12 @@ const isAbsoluteHttpUrl = (u: any): boolean => {
   return typeof u === 'string' && /^https?:\/\//i.test(u.trim());
 };
 
+// Helper to check for redirect URLs
+const isRedirectUrl = (url: string): boolean => {
+  return url.includes('vertexaisearch.cloud.google.com') || 
+         url.includes('grounding-api-redirect');
+};
+
 // Normalize links to consistent objects and filter invalid URLs
 const normalizeLinksArray = (links: any[]): any[] => {
   if (!Array.isArray(links)) return [];
@@ -32,6 +38,10 @@ const normalizeLinksArray = (links: any[]): any[] => {
     if (!l) return null;
     const url = (l.url || l.link || '').toString().trim();
     if (!isAbsoluteHttpUrl(url)) return null;
+    if (isRedirectUrl(url)) {
+      console.error(`❌ REDIRECT URL IN normalizeLinksArray - SHOULD NOT HAPPEN: ${url.substring(0, 100)}...`);
+      return null;
+    }
     const label = (l.label || l.title || '').toString().trim() || undefined;
     const type = l.type || (url.includes('spotify') ? 'streaming_platform' : url.includes('discogs') ? 'discography' : undefined);
     return { label, url, type };
@@ -144,15 +154,21 @@ const mergeRecordingSources = (existingSources: any[], notableRecordings: any[])
       if (r && Array.isArray(r.links)) {
         r.links.forEach((lnk: any) => {
           const url = lnk && lnk.url ? lnk.url : null;
-          if (url && !existingUrls.has(url)) {
-            existingUrls.add(url);
-            aggregated.push({
-              title: lnk.label || r.artist || url.split('/')[2] || 'Link',
-              url,
-              type: lnk.type || 'other',
-              content: `Link associated with recording: ${r.artist || r.album || 'unknown'}`
-            });
+          if (!url || existingUrls.has(url)) return;
+          
+          // Safety check: reject redirect URLs
+          if (isRedirectUrl(url)) {
+            console.error(`❌ REDIRECT URL IN mergeRecordingSources - SHOULD NOT HAPPEN: ${url.substring(0, 100)}...`);
+            return;
           }
+          
+          existingUrls.add(url);
+          aggregated.push({
+            title: lnk.label || r.artist || url.split('/')[2] || 'Link',
+            url,
+            type: lnk.type || 'other',
+            content: `Link associated with recording: ${r.artist || r.album || 'unknown'}`
+          });
         });
       }
     });

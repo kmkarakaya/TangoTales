@@ -180,7 +180,7 @@ const HomePage: React.FC = () => {
             <p className="text-sm text-gray-600 mb-2">
               © 2025 TangoTales. Discover the stories behind tango music.
             </p>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-500 mb-1">
               Designed & Created by{' '}
               <a 
                 href="https://www.instagram.com/tango_dj_kmk" 
@@ -190,6 +190,9 @@ const HomePage: React.FC = () => {
               >
                 DJ Murat Karakaya (KMK)
               </a>
+            </p>
+            <p className="text-xs text-gray-400">
+              Last updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
             </p>
           </div>
         </div>

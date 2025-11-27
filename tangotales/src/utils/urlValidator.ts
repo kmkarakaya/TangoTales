@@ -240,33 +240,31 @@ export async function validateUrls(
 /**
  * Filter URLs to only keep valid, accessible ones
  * Returns the FINAL URLs after following redirects
- * 
- * ⚠️ SPECIAL CASE: Google grounding redirect URLs cannot be validated in advance
- * because they are temporary tokens. We keep them AS-IS since they come from Gemini.
  */
 export async function filterValidUrls(
   urls: string[],
   concurrency: number = 3
 ): Promise<string[]> {
-  // Separate Google redirect URLs from normal URLs
-  const googleRedirectUrls = urls.filter(url => 
-    url.includes('vertexaisearch.cloud.google.com/grounding-api-redirect/')
-  );
-  const normalUrls = urls.filter(url => 
-    !url.includes('vertexaisearch.cloud.google.com/grounding-api-redirect/')
-  );
+  // Pre-filter: Remove redirect URLs before validation (safety check)
+  const cleanUrls = urls.filter(url => {
+    if (url.includes('vertexaisearch.cloud.google.com') || 
+        url.includes('grounding-api-redirect')) {
+      console.error(`❌ REDIRECT URL DETECTED IN VALIDATION - SHOULD NOT HAPPEN!`);
+      console.error(`   URL: ${url.substring(0, 100)}...`);
+      return false;
+    }
+    return true;
+  });
   
-  if (googleRedirectUrls.length > 0) {
-    console.warn(`⚠️ VALIDATION - Found ${googleRedirectUrls.length} Google redirect URLs`);
-    console.warn(`   These are temporary tokens from Gemini's grounding and CANNOT be validated`);
-    console.warn(`   Keeping them AS-IS - they will redirect when clicked by the user`);
+  if (cleanUrls.length < urls.length) {
+    console.warn(`⚠️ Filtered out ${urls.length - cleanUrls.length} redirect URLs before validation`);
   }
   
-  // Validate only normal URLs
-  const validationResults = await validateUrls(normalUrls, concurrency);
+  // Validate all URLs normally (redirect URLs should have been replaced before calling this)
+  const validationResults = await validateUrls(cleanUrls, concurrency);
   const validUrls: string[] = [];
   
-  for (const url of normalUrls) {
+  for (const url of cleanUrls) {
     const result = validationResults.get(url);
     if (result?.isValid) {
       // ✅ Use finalUrl if available (after following redirects), otherwise original URL
@@ -279,10 +277,9 @@ export async function filterValidUrls(
     }
   }
   
-  console.log(`✅ VALIDATION - ${validUrls.length}/${normalUrls.length} normal URLs valid`);
+  console.log(`✅ VALIDATION - ${validUrls.length}/${urls.length} URLs valid`);
   
-  // Return Google redirect URLs AS-IS + validated normal URLs
-  return [...googleRedirectUrls, ...validUrls];
+  return validUrls;
 }
 
 /**

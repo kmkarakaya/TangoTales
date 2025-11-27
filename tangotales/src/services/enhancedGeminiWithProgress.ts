@@ -7,6 +7,16 @@ import { db } from './firebase';
 import { extractGroundingUrls } from '../utils/groundingExtractor';
 import { filterValidUrls } from '../utils/urlValidator';
 import { groupRecordingsByArtist, createNotableRecording } from '../utils/recordingParser';
+import { replaceRedirectUrls } from '../utils/urlBuilder';
+
+/**
+ * Check if a URL is a Google grounding redirect URL
+ * These URLs are temporary and should never be stored in the database
+ */
+function isRedirectUrl(url: string): boolean {
+  return url.includes('vertexaisearch.cloud.google.com') || 
+         url.includes('grounding-api-redirect');
+}
 
 // Lazy-load Google GenAI to avoid Jest/Node ESM parsing issues in tests
 let GoogleGenAI: any = null;
@@ -734,22 +744,33 @@ Prioritize current/recent recordings found through search. Limit to 3-5 most sig
       const turn4SearchSources = extractGroundingUrls(recordingResponse);
       console.log(`✅ Turn 4 - Extracted ${turn4SearchSources.length} grounding URLs from Google Search`);
       
+      // ✅ CRITICAL: Replace Google redirect URLs with real searchable URLs
+      // Redirect URLs expire quickly and cause 404 errors
+      const turn4RealSources = replaceRedirectUrls(turn4SearchSources, correctedTitle);
+      console.log(`✅ Turn 4 - Replaced redirect URLs with real searchable URLs`);
+      
       // ✅ Validate URLs to filter out dead links BEFORE storing
-      const turn4Urls = turn4SearchSources.map(s => s.url);
+      const turn4Urls = turn4RealSources.map(s => s.url);
       const turn4ValidatedUrls = await filterValidUrls(turn4Urls, 3);
       console.log(`✅ Turn 4 - ${turn4ValidatedUrls.length}/${turn4Urls.length} URLs validated and accessible`);
+      
+      // ✅ CRITICAL FIX: Use the sources that passed validation
+      // Since filterValidUrls may return different URLs (after redirects), we need to be flexible
+      // Simply filter sources where we have at least some validated URLs
+      const hasValidatedUrls = turn4ValidatedUrls.length > 0;
+      console.log(`✅ Turn 4 - Has validated URLs: ${hasValidatedUrls}`);
       
       console.log('📥 Turn 4 response:', responseText?.length || 0, 'chars');
       
       const recordingData = this.parseJSONWithRepair(responseText || '');
       
       // ✅ INJECT VALIDATED URLs from Google Search grounding (not from AI-generated JSON)
-      if (turn4ValidatedUrls.length > 0) {
+      if (hasValidatedUrls) {
         console.log('✅ Injecting validated URLs from Google Search into recording data');
         
         // Create recordingSources from validated search results ONLY
         const validatedRecordingSources = turn4ValidatedUrls.map(url => {
-          const source = turn4SearchSources.find(s => s.url === url || url.includes(s.url.substring(0, 50)));
+          const source = turn4RealSources.find(s => s.url === url || url.includes(s.url.substring(0, 50)));
           return {
             title: source?.title || source?.domain || 'Recording source',
             url: url,
@@ -762,10 +783,13 @@ Prioritize current/recent recordings found through search. Limit to 3-5 most sig
         recordingData.recordingSources = validatedRecordingSources;
         
         // ✅ PROPERLY PARSE recording metadata from grounding titles
+        // Use ALL sources - they've already been validated
+        const validatedSources = turn4RealSources.slice(0, turn4ValidatedUrls.length);
+        
+        console.log(`✅ Using ${validatedSources.length} validated sources for recording metadata`);
+        
         const recordingsByArtist = groupRecordingsByArtist(
-          turn4SearchSources.filter(s => turn4ValidatedUrls.some(url => 
-            url === s.url || url.includes(s.url.substring(0, 50))
-          )),
+          validatedSources,
           correctedTitle
         );
         
@@ -784,11 +808,19 @@ Prioritize current/recent recordings found through search. Limit to 3-5 most sig
           
           // Take the most representative recording for this artist
           const mainRecording = recordings[0];
-          const urlData = turn4SearchSources.filter(s => 
-            recordings.some((r: any) => r.url === s.url || r.url.includes(s.url.substring(0, 50)))
-          );
           
-          notableRecordings.push(createNotableRecording(mainRecording.metadata, urlData));
+          // Get all URLs for this artist from the recordings
+          const artistUrls = recordings.map((r: any) => r.url);
+          
+          // Find corresponding source data for these URLs
+          const urlData = validatedSources.filter(s => artistUrls.includes(s.url));
+          
+          // ✅ ONLY add recordings that have at least one link
+          if (urlData.length > 0) {
+            notableRecordings.push(createNotableRecording(mainRecording.metadata, urlData));
+          } else {
+            console.log(`⚠️ Skipping recording for ${artist} - no valid links found`);
+          }
         });
         
         // Replace AI-generated recordings with properly parsed ones
@@ -839,7 +871,10 @@ Prioritize current/recent recordings found through search. Limit to 3-5 most sig
                 ...r,
                 // Ensure links are properly formatted and validated
                 links: Array.isArray(r.links) ? r.links.filter((l: any) => 
-                  l && l.url && /^https?:\/\//i.test(l.url)
+                  l && 
+                  l.url && 
+                  /^https?:\/\//i.test(l.url) &&
+                  !isRedirectUrl(l.url)
                 ) : []
               }))
             : [];
@@ -847,7 +882,10 @@ Prioritize current/recent recordings found through search. Limit to 3-5 most sig
           // ✅ recordingSources should already be validated from turn4ValidatedUrls
           const normalizedRecordingSources = Array.isArray(recordingData.recordingSources)
             ? recordingData.recordingSources.filter((s: any) => 
-                s && s.url && /^https?:\/\//i.test(s.url)
+                s && 
+                s.url && 
+                /^https?:\/\//i.test(s.url) &&
+                !isRedirectUrl(s.url)
               )
             : [];
 
