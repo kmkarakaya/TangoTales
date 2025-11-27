@@ -19,6 +19,7 @@ interface TabInfo {
 const DetailedSongModal: React.FC<DetailedSongModalProps> = ({ song, isOpen, onClose }) => {
   const [activeTab, setActiveTab] = useState('overview');
   const modalContentRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Auto-close modal when navigating to a different route
   useRouteChangeEffect(() => {
@@ -27,7 +28,7 @@ const DetailedSongModal: React.FC<DetailedSongModalProps> = ({ song, isOpen, onC
     }
   }, [isOpen]);
 
-  // Handle ESC key press
+  // Handle ESC key press and body scroll locking
   useEffect(() => {
     const handleEscKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && isOpen) {
@@ -37,15 +38,25 @@ const DetailedSongModal: React.FC<DetailedSongModalProps> = ({ song, isOpen, onC
 
     if (isOpen) {
       document.addEventListener('keydown', handleEscKey);
-      // Prevent body scroll when modal is open
+      
+      // Store original body overflow and prevent body scroll
+      const originalOverflow = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
-    }
 
-    return () => {
-      document.removeEventListener('keydown', handleEscKey);
-      document.body.style.overflow = 'unset';
-    };
+      return () => {
+        document.removeEventListener('keydown', handleEscKey);
+        // Restore original overflow value
+        document.body.style.overflow = originalOverflow;
+      };
+    }
   }, [isOpen, onClose]);
+
+  // Reset scroll position when modal opens
+  useEffect(() => {
+    if (isOpen && scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0;
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -507,7 +518,7 @@ const DetailedSongModal: React.FC<DetailedSongModalProps> = ({ song, isOpen, onC
 
   return (
     <div 
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50 p-4 overflow-y-auto"
       onClick={handleOverlayClick}
     >
       <div 
@@ -549,7 +560,7 @@ const DetailedSongModal: React.FC<DetailedSongModalProps> = ({ song, isOpen, onC
         </div>
 
         {/* Tab Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-6">
           {renderTabContent()}
         </div>
       </div>

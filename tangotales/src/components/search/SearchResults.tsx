@@ -177,13 +177,13 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   // Prevent body scroll when modal is open
   useEffect(() => {
     if (selectedSong) {
+      const originalOverflow = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
+      
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
     }
-    return () => {
-      document.body.style.overflow = '';
-    };
   }, [selectedSong]);
 
   // Handle clicking on a song card - fetch full data from database
@@ -314,7 +314,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
       <div className={`${className}`}>
         {selectedSong ? (
           <div 
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto"
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-start justify-center p-4 overflow-y-auto"
             onClick={(e) => {
               // Close modal when clicking the backdrop (not the content)
               if (e.target === e.currentTarget) {
