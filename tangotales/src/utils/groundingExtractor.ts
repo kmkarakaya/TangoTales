@@ -71,6 +71,12 @@ export function extractGroundingUrls(response: any): GroundingSource[] {
         continue;
       }
       
+      // ⚠️ CRITICAL: Gemini returns redirect URLs, not direct URLs
+      // These will be resolved during validation
+      if (uri.includes('vertexaisearch.cloud.google.com/grounding-api-redirect/')) {
+        console.log('🔀 GROUNDING - Detected Google redirect URL (will be resolved during validation)');
+      }
+      
       // Validate URL format before adding
       if (!isValidUrlFormat(uri)) {
         console.log(`⚠️ GROUNDING - Invalid URL format: ${uri}`);

@@ -209,7 +209,7 @@ export async function validateUrl(
  * 
  * @param urls - Array of URLs to validate
  * @param concurrency - Maximum number of concurrent requests
- * @returns Map of URL to validation result
+ * @returns Map of URL to validation result (with finalUrl after redirects)
  */
 export async function validateUrls(
   urls: string[],
@@ -221,6 +221,11 @@ export async function validateUrls(
   async function processUrl(url: string) {
     const result = await validateUrl(url);
     results.set(url, result);
+    
+    // Log redirect detection
+    if (result.finalUrl && result.finalUrl !== url) {
+      console.log(`🔀 REDIRECT: ${url.substring(0, 60)}... → ${result.finalUrl.substring(0, 60)}...`);
+    }
   }
 
   // Process URLs with concurrency limit
@@ -234,13 +239,24 @@ export async function validateUrls(
 
 /**
  * Filter URLs to only keep valid, accessible ones
+ * Returns the FINAL URLs after following redirects
  */
 export async function filterValidUrls(
   urls: string[],
   concurrency: number = 3
 ): Promise<string[]> {
   const validationResults = await validateUrls(urls, concurrency);
-  return urls.filter(url => validationResults.get(url)?.isValid === true);
+  const validUrls: string[] = [];
+  
+  for (const url of urls) {
+    const result = validationResults.get(url);
+    if (result?.isValid) {
+      // ✅ Use finalUrl if available (after following redirects), otherwise original URL
+      validUrls.push(result.finalUrl || url);
+    }
+  }
+  
+  return validUrls;
 }
 
 /**
