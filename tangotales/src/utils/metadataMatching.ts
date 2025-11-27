@@ -36,19 +36,7 @@ function normalizeText(text: string): string {
 /**
  * Extract tokens from metadata
  */
-function extractTokens(metadata: MetadataTokens): string[] {
-  const tokens: string[] = [];
-  
-  if (metadata.artist) tokens.push(normalizeText(metadata.artist));
-  if (metadata.orchestra) tokens.push(normalizeText(metadata.orchestra));
-  if (metadata.title) tokens.push(normalizeText(metadata.title));
-  if (metadata.album) tokens.push(normalizeText(metadata.album));
-  if (metadata.composer) tokens.push(normalizeText(metadata.composer));
-  if (metadata.lyricist) tokens.push(normalizeText(metadata.lyricist));
-  if (metadata.year) tokens.push(String(metadata.year));
-  
-  return tokens.filter(Boolean);
-}
+/* Removed extractTokens helper (unused). Use createMetadataTokens or direct token arrays in matchMetadata. */
 
 /**
  * Check if a token matches in the text (handles partial matches)
