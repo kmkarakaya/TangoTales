@@ -25,13 +25,32 @@ export const sampleEnhancedSongs: Partial<Song>[] = [
       recordings: [
         {
           artist: "Carlos Gardel",
-          year: "1924",
-          significance: "The definitive vocal interpretation that popularized the song worldwide"
+          year: 1924,
+          significance: "The definitive vocal interpretation that popularized the song worldwide",
+          links: [
+            {
+              label: "YouTube",
+              url: "https://www.youtube.com/watch?v=example1",
+              type: "youtube"
+            },
+            {
+              label: "Spotify",
+              url: "https://open.spotify.com/track/example1",
+              type: "streaming_platform"
+            }
+          ]
         },
         {
           artist: "Juan D'Arienzo",
-          year: "1937",
-          significance: "The rhythmic interpretation that became the standard for dancers"
+          year: 1937,
+          significance: "The rhythmic interpretation that became the standard for dancers",
+          links: [
+            {
+              label: "Archive.org",
+              url: "https://archive.org/details/example1",
+              type: "archive"
+            }
+          ]
         }
       ],
       searchFindings: []
@@ -76,8 +95,20 @@ export const sampleEnhancedSongs: Partial<Song>[] = [
       recordings: [
         {
           artist: "Francisco Canaro",
-          year: "1926",
-          significance: "Classic orchestral arrangement that defined the song's structure"
+          year: 1926,
+          significance: "Classic orchestral arrangement that defined the song's structure",
+          links: [
+            {
+              label: "YouTube",
+              url: "https://www.youtube.com/watch?v=example2",
+              type: "youtube"
+            },
+            {
+              label: "Discogs",
+              url: "https://www.discogs.com/release/example2",
+              type: "discography"
+            }
+          ]
         }
       ],
       searchFindings: []

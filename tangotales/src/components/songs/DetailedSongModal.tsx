@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Song } from '../../types/song';
 import ConfidenceBadge from '../common/ConfidenceBadge';
 import SearchSourceCard from '../research/SearchSourceCard';
+import { useRouteChangeEffect } from '../../hooks/useRouteChangeEffect';
 
 interface DetailedSongModalProps {
   song: Song;
@@ -17,8 +18,44 @@ interface TabInfo {
 
 const DetailedSongModal: React.FC<DetailedSongModalProps> = ({ song, isOpen, onClose }) => {
   const [activeTab, setActiveTab] = useState('overview');
+  const modalContentRef = useRef<HTMLDivElement>(null);
+
+  // Auto-close modal when navigating to a different route
+  useRouteChangeEffect(() => {
+    if (isOpen && onClose) {
+      onClose();
+    }
+  }, [isOpen]);
+
+  // Handle ESC key press
+  useEffect(() => {
+    const handleEscKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscKey);
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = 'hidden';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscKey);
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
+
+  // Handle click on backdrop/overlay
+  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Only close if clicking directly on the overlay, not its children
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
 
   const tabs: TabInfo[] = [
     { id: 'overview', label: 'Overview', icon: '📋' },
@@ -469,8 +506,14 @@ const DetailedSongModal: React.FC<DetailedSongModalProps> = ({ song, isOpen, onC
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      onClick={handleOverlayClick}
+    >
+      <div 
+        ref={modalContentRef}
+        className="bg-white dark:bg-gray-800 rounded-lg max-w-6xl max-h-[90vh] overflow-hidden flex flex-col"
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <div>

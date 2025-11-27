@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearch } from '../../hooks/useSearch';
 import { Song } from '../../types/song';
-import { LoadingSpinner, ErrorMessage, StarRating, AIResearchProgress } from '../common';
+import { LoadingSpinner, ErrorMessage, StarRating } from '../common';
 import { EnhancedSongDetail } from '../songs/EnhancedSongDetail';
 import DetailedSongModal from '../songs/DetailedSongModal';
 import { addRating } from '../../services/firestore';
@@ -21,7 +21,6 @@ const EnhanceWithAIButton: React.FC<EnhanceWithAIButtonProps> = ({
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [enhancementError, setEnhancementError] = useState<string | null>(null);
   const [currentProgress, setCurrentProgress] = useState<ProgressUpdate | null>(null);
-  const [currentSong, setCurrentSong] = useState<string>('');
   
   const handleEnhanceWithAI = async () => {
     if (songs.length === 0) return;
@@ -38,10 +37,9 @@ const EnhanceWithAIButton: React.FC<EnhanceWithAIButtonProps> = ({
       // Process each song
       for (let i = 0; i < songs.length; i++) {
         const song = songs[i];
-        setCurrentSong(`${song.title} (${i + 1}/${songs.length})`);
         
         try {
-          console.log(`🤖 Enhancing song: "${song.title}"`);
+          console.log(`🤖 Enhancing song: "${song.title}" (${i + 1}/${songs.length})`);
           
           // Research the song with enhanced AI and progress tracking
           const enhancedResult = await songInformationService.getEnhancedSongInformation(
@@ -68,7 +66,6 @@ const EnhanceWithAIButton: React.FC<EnhanceWithAIButtonProps> = ({
       
       // Clear progress and refresh the page to show enhanced results
       setCurrentProgress(null);
-      setCurrentSong('');
       onEnhancementComplete();
       
     } catch (error) {
@@ -93,17 +90,6 @@ const EnhanceWithAIButton: React.FC<EnhanceWithAIButtonProps> = ({
         </div>
       )}
       
-      {isEnhancing && currentProgress && (
-        <div className="bg-blue-50 p-4 rounded-lg border">
-          <div className="mb-2">
-            <span className="text-sm font-medium text-blue-800">
-              Researching: {currentSong}
-            </span>
-          </div>
-          <AIResearchProgress currentStep={currentProgress} />
-        </div>
-      )}
-      
       <button 
         onClick={handleEnhanceWithAI}
         disabled={isEnhancing}
@@ -114,10 +100,32 @@ const EnhanceWithAIButton: React.FC<EnhanceWithAIButtonProps> = ({
         }`}
       >
         {isEnhancing ? (
-          <>
-            <LoadingSpinner size="sm" className="inline mr-2" />
-            {currentProgress ? 'AI Research in Progress...' : '🤖 Enhancing...'}
-          </>
+          <div className="flex flex-col items-center gap-2 w-full">
+            <div className="flex items-center">
+              <LoadingSpinner size="sm" className="inline mr-2 p-0" color="white" message="" />
+              <span>{currentProgress ? 'AI Research in Progress...' : '🤖 Enhancing...'}</span>
+            </div>
+            {currentProgress && (
+              <div className="w-full px-2">
+                <div className="w-full bg-white/20 rounded-full h-1.5 mb-1">
+                  <div 
+                    className="bg-white h-1.5 rounded-full transition-all duration-500"
+                    style={{ 
+                      width: `${((currentProgress.phase + (currentProgress.completed ? 1 : 0)) / currentProgress.totalPhases) * 100}%` 
+                    }}
+                    aria-label={`Progress: ${currentProgress.phase + 1} of ${currentProgress.totalPhases}`}
+                    role="progressbar"
+                    aria-valuenow={currentProgress.phase + 1}
+                    aria-valuemin={0}
+                    aria-valuemax={currentProgress.totalPhases}
+                  />
+                </div>
+                <span className="text-xs text-white/90">
+                  {currentProgress.message} ({currentProgress.phase + 1}/{currentProgress.totalPhases})
+                </span>
+              </div>
+            )}
+          </div>
         ) : (
           <>
             <span className={iconSize}>🤖</span> Enhance with AI
@@ -153,7 +161,30 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   const [selectedSong, setSelectedSong] = useState<Song | null>(null);
   const [enhancingSong, setEnhancingSong] = useState<string | null>(null);
   const [enhancedSongs, setEnhancedSongs] = useState<Map<string, Song>>(new Map());
-  const [modalProgress, setModalProgress] = useState<ProgressUpdate | null>(null);
+
+  // Handle ESC key to close modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && selectedSong) {
+        setSelectedSong(null);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [selectedSong]);
+
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (selectedSong) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [selectedSong]);
 
   // Handle clicking on a song card - fetch full data from database
   const handleSongClick = async (song: Song) => {
@@ -197,7 +228,6 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   // Handle enhancement that keeps modal open and updates content
   const handleEnhanceSongInModal = async (song: Song) => {
     setEnhancingSong(song.id);
-    setModalProgress(null);
     
     try {
       // Import enhanced services dynamically
@@ -209,8 +239,8 @@ const SearchResults: React.FC<SearchResultsProps> = ({
       // Research the song with enhanced AI and progress tracking
       const enhancedResult = await songInformationService.getEnhancedSongInformation(
         { title: song.title, songId: song.id },
-        (progress: ProgressUpdate) => {
-          setModalProgress(progress);
+        (_progress: ProgressUpdate) => {
+          // Progress callback - could be used for analytics or logging
         }
       );
       
@@ -239,7 +269,6 @@ const SearchResults: React.FC<SearchResultsProps> = ({
       console.error(`Failed to enhance song "${song.title}":`, error);
     } finally {
       setEnhancingSong(null);
-      setModalProgress(null);
     }
   };
 
@@ -248,8 +277,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     return (
       <div className={`${className}`}>
         <div className="bg-white rounded-lg shadow-md p-8 text-center">
-          <LoadingSpinner size="lg" className="mb-4" />
-          <p className="text-gray-600">Searching tango songs...</p>
+          <LoadingSpinner size="lg" message="Searching tango songs..." />
         </div>
       </div>
     );
@@ -285,23 +313,25 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     return (
       <div className={`${className}`}>
         {selectedSong ? (
-          <>
-            {enhancingSong === selectedSong.id && modalProgress && (
-              <div className="fixed top-4 right-4 bg-white border border-blue-300 p-4 rounded-lg shadow-lg z-50 max-w-sm">
-                <div className="text-sm font-medium text-blue-800 mb-2">
-                  Enhancing: {selectedSong.title}
-                </div>
-                <AIResearchProgress currentStep={modalProgress} />
-              </div>
-            )}
-            <EnhancedSongDetail 
-              song={enhancedSongs.get(selectedSong.id) || selectedSong} 
-              onClose={() => setSelectedSong(null)}
-              onEnhance={() => handleEnhanceSongInModal(selectedSong)}
-              isEnhancing={enhancingSong === selectedSong.id}
-              className="max-w-4xl mx-auto"
-            />
-          </>
+          <div 
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto"
+            onClick={(e) => {
+              // Close modal when clicking the backdrop (not the content)
+              if (e.target === e.currentTarget) {
+                setSelectedSong(null);
+              }
+            }}
+          >
+            <div className="w-full max-w-4xl my-8">
+              <EnhancedSongDetail 
+                song={enhancedSongs.get(selectedSong.id) || selectedSong} 
+                onClose={() => setSelectedSong(null)}
+                onEnhance={() => handleEnhanceSongInModal(selectedSong)}
+                isEnhancing={enhancingSong === selectedSong.id}
+                className=""
+              />
+            </div>
+          </div>
         ) : (
           <SearchResultsList 
             results={results.map(song => enhancedSongs.get(song.id) || song)} 
@@ -805,16 +835,6 @@ const NoResultsFound: React.FC<NoResultsFoundProps> = ({ query, onRefreshSearch,
         </>
       )}
       
-      {/* AI Research Progress */}
-      {isResearching && researchProgress && (
-        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-4 max-w-lg mx-auto">
-          <div className="text-sm font-medium text-blue-800 mb-2">
-            Researching: {query}
-          </div>
-          <AIResearchProgress currentStep={researchProgress} />
-        </div>
-      )}
-
       {/* AI Research Button */}
       <div className="space-y-3">
         
@@ -834,10 +854,32 @@ const NoResultsFound: React.FC<NoResultsFoundProps> = ({ query, onRefreshSearch,
           }`}
         >
           {isResearching ? (
-            <>
-              <LoadingSpinner size="sm" className="inline mr-2" />
-              {researchProgress ? 'AI Research in Progress...' : '🎵 Researching...'}
-            </>
+            <div className="flex flex-col items-center gap-2 w-full">
+              <div className="flex items-center">
+                <LoadingSpinner size="sm" className="inline mr-2" />
+                <span>{researchProgress ? 'AI Research in Progress...' : '🎵 Researching...'}</span>
+              </div>
+              {researchProgress && (
+                <div className="w-full px-2">
+                  <div className="w-full bg-white/20 rounded-full h-1.5 mb-1">
+                    <div 
+                      className="bg-white h-1.5 rounded-full transition-all duration-500"
+                      style={{ 
+                        width: `${((researchProgress.phase + (researchProgress.completed ? 1 : 0)) / researchProgress.totalPhases) * 100}%` 
+                      }}
+                      aria-label={`Progress: ${researchProgress.phase + 1} of ${researchProgress.totalPhases}`}
+                      role="progressbar"
+                      aria-valuenow={researchProgress.phase + 1}
+                      aria-valuemin={0}
+                      aria-valuemax={researchProgress.totalPhases}
+                    />
+                  </div>
+                  <span className="text-xs text-white/90">
+                    {researchProgress.message} ({researchProgress.phase + 1}/{researchProgress.totalPhases})
+                  </span>
+                </div>
+              )}
+            </div>
           ) : (
             '🚀 Start AI Research'
           )}
