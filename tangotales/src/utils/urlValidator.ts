@@ -231,3 +231,71 @@ export async function validateUrls(
 
   return results;
 }
+
+/**
+ * Filter URLs to only keep valid, accessible ones
+ */
+export async function filterValidUrls(
+  urls: string[],
+  concurrency: number = 3
+): Promise<string[]> {
+  const validationResults = await validateUrls(urls, concurrency);
+  return urls.filter(url => validationResults.get(url)?.isValid === true);
+}
+
+/**
+ * Check if URL format is valid (basic check without network request)
+ */
+export function isValidUrlFormat(url: string): boolean {
+  if (!url || typeof url !== 'string') return false;
+  
+  // Must start with http:// or https://
+  if (!/^https?:\/\//i.test(url)) return false;
+  
+  try {
+    const urlObj = new URL(url);
+    return urlObj.hostname.length > 0 && urlObj.hostname.includes('.');
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Categorize URL type based on domain
+ */
+export function categorizeUrl(url: string): 'streaming_platform' | 'discography' | 'archive' | 'music_database' | 'encyclopedia' | 'other' {
+  try {
+    const domain = new URL(url).hostname.toLowerCase();
+    
+    if (domain.includes('youtube') || domain.includes('youtu.be') || 
+        domain.includes('spotify') || (domain.includes('apple') && domain.includes('music')) ||
+        domain.includes('soundcloud') || domain.includes('deezer')) {
+      return 'streaming_platform';
+    }
+    
+    if (domain.includes('discogs') || domain.includes('musicbrainz') ||
+        domain.includes('allmusic')) {
+      return 'discography';
+    }
+    
+    if (domain.includes('tango.info') || domain.includes('todotango') ||
+        domain.includes('tangoarchive') || domain.includes('library') ||
+        domain.includes('archive.org')) {
+      return 'archive';
+    }
+    
+    if (domain.includes('wikipedia') || domain.includes('encyclopedia') ||
+        domain.includes('britannica')) {
+      return 'encyclopedia';
+    }
+    
+    if (domain.includes('music') || domain.includes('song') ||
+        domain.includes('lyrics') || domain.includes('database')) {
+      return 'music_database';
+    }
+    
+    return 'other';
+  } catch {
+    return 'other';
+  }
+}

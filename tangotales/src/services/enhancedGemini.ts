@@ -1,5 +1,8 @@
 import { config } from '../utils/config';
 import { SongMetadata, Recording, Performer } from '../types/song';
+// URL extraction utilities (to be used when we add URL handling to prompts)
+// import { extractGroundingUrlStrings } from '../utils/groundingExtractor';
+// import { filterValidUrls } from '../utils/urlValidator';
 
 // Lazy-load Google GenAI to avoid Jest/Node ESM parsing issues in tests
 let GoogleGenAI: any = null;
@@ -118,17 +121,18 @@ class SongInformationService {
     
     try {
       if (!this.chatSessions.has(sessionKey)) {
-        console.log('📝 GEMINI DEBUG - Creating new chat session');
+        console.log('📝 GEMINI DEBUG - Creating new chat session with Google Search grounding');
         
         const chat = ai.chats.create({
           model: "gemini-2.5-flash",
           config: {
             temperature: 0.3, // Lower for factual information
-            maxOutputTokens: 2048
+            maxOutputTokens: 4096,
+            tools: [{ googleSearch: {} }]  // ✅ Enable Google Search grounding
           }
         });
         
-        console.log('✅ GEMINI DEBUG - Chat session created successfully');
+        console.log('✅ GEMINI DEBUG - Chat session created with search grounding');
         this.chatSessions.set(sessionKey, chat);
       } else {
         console.log('♻️ GEMINI DEBUG - Reusing existing chat session');

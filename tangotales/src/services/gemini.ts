@@ -1,6 +1,8 @@
 import { GoogleGenAI } from '@google/genai';
 import { config } from '../utils/config';
 import { GeminiResponse } from '../types/song';
+import { filterValidUrls } from '../utils/urlValidator';
+import { extractGroundingUrlStrings } from '../utils/groundingExtractor';
 
 // Initialize Gemini AI client
 const ai = new GoogleGenAI({ apiKey: config.gemini.apiKey });
@@ -18,7 +20,7 @@ export interface ResearchSongResult {
 }
 
 /**
- * Research a tango song using Gemini AI
+ * Research a tango song using Gemini AI with Google Search grounding
  */
 export const researchSongWithAI = async (params: ResearchSongParams): Promise<ResearchSongResult> => {
   if (!config.gemini.apiKey) {
@@ -28,17 +30,27 @@ export const researchSongWithAI = async (params: ResearchSongParams): Promise<Re
   try {
     const prompt = createResearchPrompt(params.title, params.artist);
     
+    console.log('🔍 Calling Gemini with Google Search grounding enabled');
     const response = await ai.models.generateContent({
       model: 'gemini-2.0-flash',
       contents: prompt,
       config: {
-        systemInstruction: 'You are a tango song expert. You know Argentine tango, history and culture. You can also search web for resources.',
+        systemInstruction: 'You are a tango song expert. You know Argentine tango, history and culture. Search the web for accurate, current information.',
         temperature: 0.7,
-        maxOutputTokens: 1000
+        maxOutputTokens: 2000,
+        tools: [{ googleSearch: {} }]  // ✅ Enable Google Search grounding
       }
     });
 
-    // Parse JSON response
+    // ✅ Extract REAL URLs from grounding metadata (not from AI-generated text)
+    const groundingUrls = extractGroundingUrlStrings(response);
+    console.log(`🔍 Found ${groundingUrls.length} URLs from search grounding`);
+    
+    // ✅ Validate URLs before using them
+    const validatedUrls = await filterValidUrls(groundingUrls, 3);
+    console.log(`✅ ${validatedUrls.length} URLs validated successfully`);
+
+    // Parse JSON response for structured data
     const responseText = response.text;
     if (!responseText) {
       throw new Error('Empty response from Gemini AI');
@@ -53,7 +65,7 @@ export const researchSongWithAI = async (params: ResearchSongParams): Promise<Re
     return {
       title: aiData.title,
       explanation: explanation,
-      sources: aiData.sources,
+      sources: validatedUrls,  // ✅ Use validated URLs from grounding metadata, NOT from AI text
       tags: tags
     };
   } catch (error) {
@@ -63,19 +75,26 @@ export const researchSongWithAI = async (params: ResearchSongParams): Promise<Re
 };
 
 /**
- * Create a structured prompt for Gemini AI
+ * Create a structured prompt for Gemini AI with Search Grounding
  */
 const createResearchPrompt = (title: string, artist?: string): string => {
   const songIdentifier = artist ? `"${title}" by ${artist}` : `"${title}"`;
   
-  return `prepare info about the tango song ${songIdentifier} and return it as a json object like: {title: string, date: string, title_meaning: string, cultural_notes: string, sources: [string]}
+  return `Search the web for information about the tango song ${songIdentifier} and provide a JSON response with this structure:
 
-Guidelines for the response:
-- title: The exact name of the tango song
-- date: When the song was written (year or approximate period)
-- title_meaning: What the title means and any translation from Spanish to English
-- cultural_notes: Historical context, composer/lyricist info, cultural significance, story behind the song, notable performances or recordings (2-3 paragraphs)
-- sources: Array of realistic website URLs where more info could be found
+{
+  "title": "exact song title",
+  "date": "year or period when written",
+  "title_meaning": "what the title means and translation if Spanish",
+  "cultural_notes": "historical context, composer/lyricist, cultural significance, story, notable performances (2-3 paragraphs)",
+  "sources": []
+}
+
+IMPORTANT: 
+- Do NOT include URLs in the "sources" field - they will be extracted automatically from search results
+- Focus on accurate, verifiable information from authoritative tango sources
+- Search for reliable tango databases, archives, and music history sites
+- Provide rich cultural and historical context
 
 Research the tango song: ${songIdentifier}`;
 };
